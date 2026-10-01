@@ -1,0 +1,28 @@
+name: Azure Deployment CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Build Backend JAR (demo package)
+      run: mvn -B clean package --file demo/pom.xml -DskipTests=true
+
+    - name: Deploy to Azure Web App (Backend)
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'fiberperu-backend-api'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: 'demo/target/*.jar'
