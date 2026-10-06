@@ -1,7 +1,7 @@
 package com.fiberperu.demo.security;
 
-import com.fiberperu.demo.entity.User;
-import com.fiberperu.demo.repository.UserRepository;
+import com.fiberperu.demo.entity.Usuario;
+import com.fiberperu.demo.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -9,30 +9,38 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final UsuarioRepository usuarioRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(usernameOrEmail)
-                .orElseGet(() -> userRepository.findByEmail(usernameOrEmail)
-                        .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username o email: " + usernameOrEmail)));
+    public UserDetails loadUserByUsername(String correo)
+            throws UsernameNotFoundException {
+
+        Usuario usuario = usuarioRepository.findByCorreo(correo)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "Usuario no encontrado con el correo: " + correo
+                        )
+                );
+
+        SimpleGrantedAuthority autoridad =
+                new SimpleGrantedAuthority(
+                        usuario.getRol().getNombre().name()
+                );
 
         return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
-                user.getPassword(),
-                user.getActivo(),
+                usuario.getCorreo(),
+                usuario.getContrasenaHash(),
+                Boolean.TRUE.equals(usuario.getEstado()),
                 true,
                 true,
                 true,
-                user.getRoles().stream()
-                        .map(role -> new SimpleGrantedAuthority(role.getNombre().name()))
-                        .collect(Collectors.toList())
+                List.of(autoridad)
         );
     }
 }

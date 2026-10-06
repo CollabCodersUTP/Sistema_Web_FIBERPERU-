@@ -1,50 +1,41 @@
--- ============================================================
--- SISTEMA WEB DE GESTIÓN Y SEGUIMIENTO DE INSTALACIONES (FIBERPERU E.I.R.L.)
--- Script DML: Seeds / Datos Iniciales de Prueba
--- ============================================================
-
--- 1. Insertar Roles de Usuario (RBAC)
-INSERT INTO roles (nombre, descripcion) VALUES
-('ROLE_ADMINISTRADOR', 'Administrador total del sistema'),
-('ROLE_COORDINADOR', 'Coordinador de instalaciones y programación de técnicos'),
-('ROLE_TECNICO', 'Técnico de campo encargado de la instalación de dispositivos'),
-('ROLE_CLIENTE', 'Cliente solicitante con acceso a seguimiento de tickets')
-ON CONFLICT (nombre) DO NOTHING;
-
--- 2. Insertar Usuarios por Defecto (Contraseña cifrada con BCrypt: 'admin123' / 'password123')
--- Nota: En producción las contraseñas se generan vía Spring Security BCryptPasswordEncoder
-INSERT INTO usuarios (username, password, email, nombre, apellido, telefono, activo) VALUES
-('admin', '$2a$10$e.wS.t88lG8g/H9f1y/E5.Ff5X51W03V6Y2Zq28G3tq1R0/N1vK.C', 'admin@fiberperu.pe', 'Carlos', 'Mendoza', '987654321', true),
-('coord_juan', '$2a$10$e.wS.t88lG8g/H9f1y/E5.Ff5X51W03V6Y2Zq28G3tq1R0/N1vK.C', 'j.perez@fiberperu.pe', 'Juan', 'Pérez', '912345678', true),
-('tec_roberto', '$2a$10$e.wS.t88lG8g/H9f1y/E5.Ff5X51W03V6Y2Zq28G3tq1R0/N1vK.C', 'r.gomez@fiberperu.pe', 'Roberto', 'Gómez', '998877665', true),
-('cliente_empresa', '$2a$10$e.wS.t88lG8g/H9f1y/E5.Ff5X51W03V6Y2Zq28G3tq1R0/N1vK.C', 'contacto@innovaperu.com', 'Innova', 'Peru S.A.C.', '955443322', true)
-ON CONFLICT (username) DO NOTHING;
-
--- Asignar Roles a Usuarios
--- Admin (ID 1 -> ROL 1)
-INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (1, 1) ON CONFLICT DO NOTHING;
--- Coordinador (ID 2 -> ROL 2)
-INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (2, 2) ON CONFLICT DO NOTHING;
--- Técnico (ID 3 -> ROL 3)
-INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (3, 3) ON CONFLICT DO NOTHING;
--- Cliente (ID 4 -> ROL 4)
-INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (4, 4) ON CONFLICT DO NOTHING;
-
--- 3. Insertar Clientes
-INSERT INTO clientes (tipo_documento, numero_documento, razon_social, direccion, referencia, telefono, email, usuario_id) VALUES
-('RUC', '20601234567', 'Innova Perú S.A.C.', 'Av. Javier Prado Este 2450, San Borja, Lima', 'Frente a Museo de la Nación', '955443322', 'contacto@innovaperu.com', 4);
-
--- 4. Insertar Técnicos
-INSERT INTO tecnicos (codigo_tecnico, especialidad, estado, usuario_id) VALUES
-('TEC-001', 'Fibra Óptica / Redes FTTH', 'DISPONIBLE', 3);
-
--- 5. Insertar Dispositivos de Ejemplo
-INSERT INTO dispositivos (numero_serie, tipo, marca, modelo, mac_address, estado) VALUES
-('SN-HG8145V5-001', 'ROUTER_ONT', 'Huawei', 'HG8145V5', 'AA:BB:CC:11:22:33', 'EN_STOCK'),
-('SN-HG8145V5-002', 'ROUTER_ONT', 'Huawei', 'HG8145V5', 'AA:BB:CC:11:22:34', 'EN_STOCK'),
-('SN-ZTE-F670L-001', 'ROUTER_ONT', 'ZTE', 'F670L', 'DD:EE:FF:44:55:66', 'EN_STOCK'),
-('SN-SW-TPLINK-24P', 'SWITCH', 'TP-Link', 'TL-SG1024D', '11:22:33:44:55:66', 'EN_STOCK');
-
--- 6. Insertar Órden de Instalación de Ejemplo
-INSERT INTO ordenes_instalacion (codigo_orden, cliente_id, tecnico_id, fecha_programada, estado, prioridad, direccion_instalacion, observaciones) VALUES
-('ORD-2026-0001', 1, 1, '2026-10-02 10:00:00', 'ASIGNADA', 'ALTA', 'Av. Javier Prado Este 2450, San Borja, Lima', 'Instalación de Router ONT de fibra dedicada 500Mbps');
+-- FIBERPERU E.I.R.L. - DATOS DEMO POSTGRESQL 18
+-- Ejecutar después de 01_schema.sql.
+-- Cuentas demo: contraseña local FiberPeruDemo2026! (hash BCrypt).
+BEGIN;
+INSERT INTO rol(nombre,descripcion) VALUES
+ ('ROLE_ADMINISTRADOR','Administración general del sistema'),
+ ('ROLE_COORDINADOR','Coordinación y validación de instalaciones'),
+ ('ROLE_TECNICO','Ejecución de instalaciones'),
+ ('ROLE_CLIENTE','Registro y consulta de solicitudes');
+INSERT INTO usuario(id_rol,nombres,apellidos,correo,contrasena_hash,telefono)
+SELECT r.id_rol,v.nombres,v.apellidos,v.correo,v.hash,v.telefono FROM (VALUES
+ ('ROLE_ADMINISTRADOR','Carlos','Mendoza','admin@fiberperu.test','$2b$12$9bi1biFe3wzEhgp.20SLF.2ATyBHiI9xV7TaMzXtxRy06wvqIxaem','900000001'),
+ ('ROLE_COORDINADOR','Juan','Perez','coordinador@fiberperu.test','$2b$12$9bi1biFe3wzEhgp.20SLF.2ATyBHiI9xV7TaMzXtxRy06wvqIxaem','900000002'),
+ ('ROLE_TECNICO','Roberto','Gomez','tecnico@fiberperu.test','$2b$12$9bi1biFe3wzEhgp.20SLF.2ATyBHiI9xV7TaMzXtxRy06wvqIxaem','900000003'),
+ ('ROLE_CLIENTE','Ana','Torres','cliente@fiberperu.test','$2b$12$9bi1biFe3wzEhgp.20SLF.2ATyBHiI9xV7TaMzXtxRy06wvqIxaem','900000004')
+) v(rol,nombres,apellidos,correo,hash,telefono) JOIN rol r ON r.nombre=v.rol;
+INSERT INTO coordinador(id_usuario,cargo) SELECT id_usuario,'Coordinador de instalaciones' FROM usuario WHERE correo='coordinador@fiberperu.test';
+INSERT INTO tecnico(id_usuario,especialidad) SELECT id_usuario,'Fibra óptica y redes FTTH' FROM usuario WHERE correo='tecnico@fiberperu.test';
+INSERT INTO cliente(id_usuario,tipo_documento,numero_documento,razon_social,direccion) SELECT id_usuario,'RUC','20999999991','Cliente Demo S.A.C.','Av. Demostración 100, Lima' FROM usuario WHERE correo='cliente@fiberperu.test';
+INSERT INTO tipo_dispositivo(nombre,descripcion) VALUES
+ ('ONT','Terminal óptico para FTTH'),('ROUTER','Equipo de enrutamiento'),
+ ('SWITCH','Conmutador de red'),('ACCESS_POINT','Punto de acceso inalámbrico');
+INSERT INTO dispositivo(id_tipo_dispositivo,marca,modelo,numero_serie)
+SELECT t.id_tipo_dispositivo,v.marca,v.modelo,v.serie FROM (VALUES
+ ('ONT','Huawei','HG8145V5','DEMO-HG8145V5-001'),('ONT','ZTE','F670L','DEMO-ZTE-F670L-001'),
+ ('SWITCH','TP-Link','TL-SG1024D','DEMO-TPLINK-24P-001'),('ACCESS_POINT','Ubiquiti','UAP-AC-LITE','DEMO-UAP-001')
+) v(tipo,marca,modelo,serie) JOIN tipo_dispositivo t ON t.nombre=v.tipo;
+INSERT INTO solicitud_instalacion(id_cliente,codigo_solicitud,tipo_servicio,descripcion_servicio,direccion_instalacion,estado,resultado_evaluacion,observacion_evaluacion)
+SELECT c.id_cliente,'SOL-2026-0001','INSTALACION_FTTH','Instalación de fibra óptica de demostración.','Av. Demostración 100, Lima','APROBADA','APROBADA','Solicitud académica.' FROM cliente c JOIN usuario u ON u.id_usuario=c.id_usuario WHERE u.correo='cliente@fiberperu.test';
+INSERT INTO orden_trabajo(id_solicitud,id_coordinador,id_tecnico,codigo_orden,fecha_programada,hora_programada,estado,observaciones)
+SELECT s.id_solicitud,c.id_coordinador,t.id_tecnico,'OT-2026-0001',DATE '2026-10-10',TIME '10:00','ASIGNADA','Orden demo.' FROM solicitud_instalacion s CROSS JOIN coordinador c CROSS JOIN tecnico t WHERE s.codigo_solicitud='SOL-2026-0001';
+INSERT INTO orden_dispositivo(id_orden,id_dispositivo,estado_asignacion,observaciones)
+SELECT o.id_orden,d.id_dispositivo,'ASIGNADO','Equipo reservado.' FROM orden_trabajo o JOIN dispositivo d ON d.numero_serie='DEMO-HG8145V5-001' WHERE o.codigo_orden='OT-2026-0001';
+UPDATE dispositivo SET estado='ASIGNADO',disponibilidad=FALSE WHERE numero_serie='DEMO-HG8145V5-001';
+INSERT INTO evidencia_instalacion(id_orden,nombre_archivo,tipo_archivo,url_archivo,descripcion)
+SELECT id_orden,'evidencia_demo_01.jpg','FOTO_EQUIPO','https://storage.example.test/evidencias/evidencia_demo_01.jpg','Evidencia simulada pendiente.' FROM orden_trabajo WHERE codigo_orden='OT-2026-0001';
+INSERT INTO observacion_servicio(id_orden,id_tecnico,descripcion)
+SELECT o.id_orden,t.id_tecnico,'Observación técnica simulada.' FROM orden_trabajo o CROSS JOIN tecnico t WHERE o.codigo_orden='OT-2026-0001';
+INSERT INTO historial_orden(id_orden,id_usuario,tipo_evento,estado_anterior,estado_nuevo,motivo)
+SELECT o.id_orden,u.id_usuario,'CREACION_Y_ASIGNACION','REGISTRADA','ASIGNADA','Registro automático demo.' FROM orden_trabajo o JOIN usuario u ON u.correo='coordinador@fiberperu.test' WHERE o.codigo_orden='OT-2026-0001';
+COMMIT;

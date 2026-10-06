@@ -1,0 +1,22 @@
+# Credenciales y configuraciones locales
+.env
+.env.*
+!.env.example
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties
+**/application-secrets.yml
+**/application-secrets.yaml
+
+# Llaves, certificados y almacenes de claves
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+# Archivos de IDE y sistema operativo
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

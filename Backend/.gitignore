@@ -1,23 +1,39 @@
-HELP.md
+### Maven ###
 target/
 .mvn/wrapper/maven-wrapper.jar
+
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+### Spring Boot / configuración local ###
+.env
+.env.*
+!.env.example
+application-local.yml
+application-local.yaml
+application-local.properties
+src/main/resources/application-local.yml
+src/main/resources/application-local.yaml
+src/main/resources/application-local.properties
+
+### Logs ###
+*.log
+logs/
 
 ### IntelliJ IDEA ###
-.idea
+.idea/
 *.iws
 *.iml
 *.ipr
+
+### STS ###
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
 
 ### NetBeans ###
 /nbproject/private/
@@ -26,8 +42,17 @@ target/
 /nbdist/
 /.nb-gradle/
 build/
+
 !**/src/main/**/build/
 !**/src/test/**/build/
 
 ### VS Code ###
 .vscode/
+
+### Sistema operativo ###
+.DS_Store
+Thumbs.db
+
+### Archivos temporales ###
+*.tmp
+*.temp

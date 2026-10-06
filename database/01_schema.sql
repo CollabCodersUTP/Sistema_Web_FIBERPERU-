@@ -1,119 +1,154 @@
--- ============================================================
--- SISTEMA WEB DE GESTIÓN Y SEGUIMIENTO DE INSTALACIONES (FIBERPERU E.I.R.L.)
--- Script DDL: Creación de Tablas y Relaciones (PostgreSQL)
--- ============================================================
+-- FIBERPERU E.I.R.L. - ESQUEMA DEFINITIVO POSTGRESQL 18
+-- ADVERTENCIA: este script elimina las tablas actuales de public y las recrea.
+BEGIN;
 
--- Eliminar tablas si existen (orden inverso a dependencias)
-DROP TABLE IF EXISTS evidencias_instalacion CASCADE;
+-- Modelo definitivo
+DROP TABLE IF EXISTS historial_orden CASCADE;
+DROP TABLE IF EXISTS observacion_servicio CASCADE;
+DROP TABLE IF EXISTS evidencia_instalacion CASCADE;
+DROP TABLE IF EXISTS orden_dispositivo CASCADE;
+DROP TABLE IF EXISTS dispositivo CASCADE;
+DROP TABLE IF EXISTS tipo_dispositivo CASCADE;
+DROP TABLE IF EXISTS orden_trabajo CASCADE;
+DROP TABLE IF EXISTS solicitud_instalacion CASCADE;
+DROP TABLE IF EXISTS tecnico CASCADE;
+DROP TABLE IF EXISTS coordinador CASCADE;
+DROP TABLE IF EXISTS cliente CASCADE;
+DROP TABLE IF EXISTS usuario CASCADE;
+DROP TABLE IF EXISTS rol CASCADE;
+
+-- Modelo anterior
 DROP TABLE IF EXISTS detalle_orden_dispositivos CASCADE;
+DROP TABLE IF EXISTS evidencias_instalacion CASCADE;
 DROP TABLE IF EXISTS ordenes_instalacion CASCADE;
+DROP TABLE IF EXISTS usuario_roles CASCADE;
 DROP TABLE IF EXISTS dispositivos CASCADE;
 DROP TABLE IF EXISTS tecnicos CASCADE;
 DROP TABLE IF EXISTS clientes CASCADE;
-DROP TABLE IF EXISTS usuario_roles CASCADE;
 DROP TABLE IF EXISTS usuarios CASCADE;
 DROP TABLE IF EXISTS roles CASCADE;
 
--- 1. Tabla de Roles (RBAC)
-CREATE TABLE roles (
-    id BIGSERIAL PRIMARY KEY,
-    nombre VARCHAR(50) NOT NULL UNIQUE, -- ROLE_ADMINISTRADOR, ROLE_COORDINADOR, ROLE_TECNICO, ROLE_CLIENTE
-    descripcion VARCHAR(255)
+CREATE TABLE rol (
+ id_rol BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ nombre VARCHAR(50) NOT NULL UNIQUE,
+ descripcion VARCHAR(150),
+ estado BOOLEAN NOT NULL DEFAULT TRUE
 );
-
--- 2. Tabla de Usuarios
-CREATE TABLE usuarios (
-    id BIGSERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    nombre VARCHAR(100) NOT NULL,
-    apellido VARCHAR(100) NOT NULL,
-    telefono VARCHAR(20),
-    activo BOOLEAN DEFAULT TRUE,
-    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE usuario (
+ id_usuario BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_rol BIGINT NOT NULL REFERENCES rol(id_rol) ON DELETE RESTRICT,
+ nombres VARCHAR(100) NOT NULL, apellidos VARCHAR(100) NOT NULL,
+ correo VARCHAR(150) NOT NULL UNIQUE, contrasena_hash VARCHAR(255) NOT NULL,
+ telefono VARCHAR(20), estado BOOLEAN NOT NULL DEFAULT TRUE,
+ fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
--- Tabla Intermedia Usuario - Roles
-CREATE TABLE usuario_roles (
-    usuario_id BIGINT NOT NULL,
-    rol_id BIGINT NOT NULL,
-    PRIMARY KEY (usuario_id, rol_id),
-    CONSTRAINT fk_user_role_user FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-    CONSTRAINT fk_user_role_role FOREIGN KEY (rol_id) REFERENCES roles(id) ON DELETE CASCADE
+CREATE TABLE coordinador (
+ id_coordinador BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_usuario BIGINT NOT NULL UNIQUE REFERENCES usuario(id_usuario) ON DELETE CASCADE,
+ cargo VARCHAR(100) NOT NULL, estado BOOLEAN NOT NULL DEFAULT TRUE
 );
-
--- 3. Tabla de Clientes
-CREATE TABLE clientes (
-    id BIGSERIAL PRIMARY KEY,
-    tipo_documento VARCHAR(10) NOT NULL, -- DNI, RUC
-    numero_documento VARCHAR(20) NOT NULL UNIQUE,
-    razon_social VARCHAR(150) NOT NULL,
-    direccion VARCHAR(255) NOT NULL,
-    referencia VARCHAR(255),
-    telefono VARCHAR(20),
-    email VARCHAR(100),
-    usuario_id BIGINT UNIQUE,
-    CONSTRAINT fk_cliente_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+CREATE TABLE cliente (
+ id_cliente BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_usuario BIGINT NOT NULL UNIQUE REFERENCES usuario(id_usuario) ON DELETE CASCADE,
+ tipo_documento VARCHAR(20) NOT NULL CHECK (tipo_documento IN ('DNI','RUC','CE','PASAPORTE')),
+ numero_documento VARCHAR(20) NOT NULL UNIQUE, razon_social VARCHAR(150),
+ direccion VARCHAR(250) NOT NULL, estado BOOLEAN NOT NULL DEFAULT TRUE
 );
-
--- 4. Tabla de Técnicos Instaladores
-CREATE TABLE tecnicos (
-    id BIGSERIAL PRIMARY KEY,
-    codigo_tecnico VARCHAR(20) NOT NULL UNIQUE,
-    especialidad VARCHAR(100),
-    estado VARCHAR(30) DEFAULT 'DISPONIBLE', -- DISPONIBLE, EN_RUTA, OCUPADO, INACTIVO
-    usuario_id BIGINT UNIQUE,
-    CONSTRAINT fk_tecnico_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+CREATE TABLE tecnico (
+ id_tecnico BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_usuario BIGINT NOT NULL UNIQUE REFERENCES usuario(id_usuario) ON DELETE CASCADE,
+ especialidad VARCHAR(100), disponibilidad BOOLEAN NOT NULL DEFAULT TRUE,
+ estado BOOLEAN NOT NULL DEFAULT TRUE
 );
-
--- 5. Tabla de Dispositivos / Equipos de Red
-CREATE TABLE dispositivos (
-    id BIGSERIAL PRIMARY KEY,
-    numero_serie VARCHAR(100) NOT NULL UNIQUE,
-    tipo VARCHAR(50) NOT NULL, -- ROUTER_ONT, SWITCH, DECODIFICADOR, CABLE_FIBRA, NAP_SPLITTER
-    marca VARCHAR(50) NOT NULL,
-    modelo VARCHAR(50) NOT NULL,
-    mac_address VARCHAR(50),
-    estado VARCHAR(30) DEFAULT 'EN_STOCK', -- EN_STOCK, ASIGNADO, INSTALADO, DEFECTUOSO
-    fecha_ingreso TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE solicitud_instalacion (
+ id_solicitud BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_cliente BIGINT NOT NULL REFERENCES cliente(id_cliente) ON DELETE RESTRICT,
+ codigo_solicitud VARCHAR(20) NOT NULL UNIQUE, tipo_servicio VARCHAR(100) NOT NULL,
+ descripcion_servicio VARCHAR(500) NOT NULL, direccion_instalacion VARCHAR(250) NOT NULL,
+ fecha_solicitud TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ estado VARCHAR(30) NOT NULL DEFAULT 'REGISTRADA'
+  CHECK (estado IN ('REGISTRADA','EN_EVALUACION','APROBADA','RECHAZADA','CANCELADA')),
+ resultado_evaluacion VARCHAR(30)
+  CHECK (resultado_evaluacion IS NULL OR resultado_evaluacion IN ('APROBADA','RECHAZADA')),
+ observacion_evaluacion VARCHAR(500)
 );
-
--- 6. Tabla de Órdenes de Instalación
-CREATE TABLE ordenes_instalacion (
-    id BIGSERIAL PRIMARY KEY,
-    codigo_orden VARCHAR(30) NOT NULL UNIQUE,
-    cliente_id BIGINT NOT NULL,
-    tecnico_id BIGINT,
-    fecha_programada TIMESTAMP NOT NULL,
-    fecha_cierre TIMESTAMP,
-    estado VARCHAR(30) DEFAULT 'PENDIENTE', -- PENDIENTE, ASIGNADA, EN_PROCESO, COMPLETADA, CANCELADA
-    prioridad VARCHAR(20) DEFAULT 'MEDIA', -- BAJA, MEDIA, ALTA, URGENTE
-    direccion_instalacion VARCHAR(255) NOT NULL,
-    observaciones TEXT,
-    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_orden_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id),
-    CONSTRAINT fk_orden_tecnico FOREIGN KEY (tecnico_id) REFERENCES tecnicos(id)
+CREATE TABLE orden_trabajo (
+ id_orden BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_solicitud BIGINT NOT NULL UNIQUE REFERENCES solicitud_instalacion(id_solicitud) ON DELETE RESTRICT,
+ id_coordinador BIGINT NOT NULL REFERENCES coordinador(id_coordinador) ON DELETE RESTRICT,
+ id_tecnico BIGINT REFERENCES tecnico(id_tecnico) ON DELETE RESTRICT,
+ codigo_orden VARCHAR(20) NOT NULL UNIQUE, fecha_programada DATE, hora_programada TIME,
+ fecha_inicio TIMESTAMP, fecha_finalizacion TIMESTAMP,
+ estado VARCHAR(30) NOT NULL DEFAULT 'REGISTRADA'
+  CHECK (estado IN ('REGISTRADA','PROGRAMADA','ASIGNADA','EN_PROCESO','OBSERVADA','FINALIZADA','CANCELADA')),
+ motivo_reprogramacion VARCHAR(500), observaciones VARCHAR(500),
+ CONSTRAINT ck_programacion_completa CHECK ((fecha_programada IS NULL AND hora_programada IS NULL) OR (fecha_programada IS NOT NULL AND hora_programada IS NOT NULL)),
+ CONSTRAINT ck_orden_fechas CHECK (fecha_finalizacion IS NULL OR fecha_inicio IS NULL OR fecha_finalizacion >= fecha_inicio)
 );
-
--- 7. Tabla Detalle de Dispositivos por Órden
-CREATE TABLE detalle_orden_dispositivos (
-    id BIGSERIAL PRIMARY KEY,
-    orden_id BIGINT NOT NULL,
-    dispositivo_id BIGINT NOT NULL,
-    observacion VARCHAR(255),
-    CONSTRAINT fk_detalle_orden FOREIGN KEY (orden_id) REFERENCES ordenes_instalacion(id) ON DELETE CASCADE,
-    CONSTRAINT fk_detalle_dispositivo FOREIGN KEY (dispositivo_id) REFERENCES dispositivos(id)
+CREATE TABLE tipo_dispositivo (
+ id_tipo_dispositivo BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ nombre VARCHAR(100) NOT NULL UNIQUE, descripcion VARCHAR(250),
+ estado BOOLEAN NOT NULL DEFAULT TRUE
 );
-
--- 8. Tabla de Evidencias Multimedia
-CREATE TABLE evidencias_instalacion (
-    id BIGSERIAL PRIMARY KEY,
-    orden_id BIGINT NOT NULL,
-    url_archivo VARCHAR(500) NOT NULL,
-    tipo_archivo VARCHAR(50), -- FOTO_CONEXION, FOTO_EQUIPO, ACTA_CONFORMIDAD
-    descripcion TEXT,
-    fecha_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_evidencia_orden FOREIGN KEY (orden_id) REFERENCES ordenes_instalacion(id) ON DELETE CASCADE
+CREATE TABLE dispositivo (
+ id_dispositivo BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_tipo_dispositivo BIGINT NOT NULL REFERENCES tipo_dispositivo(id_tipo_dispositivo) ON DELETE RESTRICT,
+ marca VARCHAR(80) NOT NULL, modelo VARCHAR(100) NOT NULL,
+ numero_serie VARCHAR(100) NOT NULL UNIQUE,
+ estado VARCHAR(30) NOT NULL DEFAULT 'EN_STOCK'
+  CHECK (estado IN ('EN_STOCK','ASIGNADO','INSTALADO','RETIRADO','DEFECTUOSO','INACTIVO')),
+ disponibilidad BOOLEAN NOT NULL DEFAULT TRUE,
+ fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE orden_dispositivo (
+ id_orden_dispositivo BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_orden BIGINT NOT NULL REFERENCES orden_trabajo(id_orden) ON DELETE CASCADE,
+ id_dispositivo BIGINT NOT NULL REFERENCES dispositivo(id_dispositivo) ON DELETE RESTRICT,
+ fecha_asignacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, fecha_retiro TIMESTAMP,
+ estado_asignacion VARCHAR(30) NOT NULL DEFAULT 'ASIGNADO'
+  CHECK (estado_asignacion IN ('ASIGNADO','INSTALADO','RETIRADO','REEMPLAZADO')),
+ observaciones VARCHAR(500), UNIQUE(id_orden,id_dispositivo),
+ CHECK (fecha_retiro IS NULL OR fecha_retiro >= fecha_asignacion)
+);
+CREATE UNIQUE INDEX uq_dispositivo_asignacion_activa ON orden_dispositivo(id_dispositivo)
+ WHERE fecha_retiro IS NULL AND estado_asignacion IN ('ASIGNADO','INSTALADO');
+CREATE TABLE evidencia_instalacion (
+ id_evidencia BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_orden BIGINT NOT NULL REFERENCES orden_trabajo(id_orden) ON DELETE CASCADE,
+ id_coordinador_validador BIGINT REFERENCES coordinador(id_coordinador) ON DELETE RESTRICT,
+ nombre_archivo VARCHAR(255) NOT NULL, tipo_archivo VARCHAR(50) NOT NULL,
+ url_archivo VARCHAR(500) NOT NULL, descripcion VARCHAR(250),
+ fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ estado_validacion VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE'
+  CHECK (estado_validacion IN ('PENDIENTE','APROBADA','OBSERVADA','RECHAZADA')),
+ fecha_validacion TIMESTAMP, observacion_validacion VARCHAR(500),
+ CONSTRAINT ck_evidencia_validacion CHECK ((estado_validacion='PENDIENTE' AND id_coordinador_validador IS NULL AND fecha_validacion IS NULL) OR (estado_validacion<>'PENDIENTE' AND id_coordinador_validador IS NOT NULL AND fecha_validacion IS NOT NULL))
+);
+CREATE TABLE observacion_servicio (
+ id_observacion BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_orden BIGINT NOT NULL REFERENCES orden_trabajo(id_orden) ON DELETE CASCADE,
+ id_tecnico BIGINT NOT NULL REFERENCES tecnico(id_tecnico) ON DELETE RESTRICT,
+ descripcion VARCHAR(500) NOT NULL,
+ fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ estado BOOLEAN NOT NULL DEFAULT TRUE
+);
+CREATE TABLE historial_orden (
+ id_historial BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_orden BIGINT NOT NULL REFERENCES orden_trabajo(id_orden) ON DELETE CASCADE,
+ id_usuario BIGINT NOT NULL REFERENCES usuario(id_usuario) ON DELETE RESTRICT,
+ tipo_evento VARCHAR(50) NOT NULL, estado_anterior VARCHAR(30), estado_nuevo VARCHAR(30),
+ fecha_hora TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, motivo VARCHAR(500),
+ CHECK ((estado_anterior IS NULL AND estado_nuevo IS NULL) OR estado_anterior IS DISTINCT FROM estado_nuevo)
+);
+CREATE INDEX idx_usuario_rol ON usuario(id_rol);
+CREATE INDEX idx_solicitud_cliente ON solicitud_instalacion(id_cliente);
+CREATE INDEX idx_solicitud_estado ON solicitud_instalacion(estado);
+CREATE INDEX idx_orden_coordinador ON orden_trabajo(id_coordinador);
+CREATE INDEX idx_orden_tecnico ON orden_trabajo(id_tecnico);
+CREATE INDEX idx_orden_estado ON orden_trabajo(estado);
+CREATE INDEX idx_dispositivo_tipo ON dispositivo(id_tipo_dispositivo);
+CREATE INDEX idx_orden_dispositivo_orden ON orden_dispositivo(id_orden);
+CREATE INDEX idx_evidencia_orden ON evidencia_instalacion(id_orden);
+CREATE INDEX idx_observacion_orden ON observacion_servicio(id_orden);
+CREATE INDEX idx_historial_orden_fecha ON historial_orden(id_orden,fecha_hora);
+COMMIT;

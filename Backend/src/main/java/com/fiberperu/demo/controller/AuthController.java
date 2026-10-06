@@ -1,7 +1,7 @@
 package com.fiberperu.demo.controller;
 
-import com.fiberperu.demo.dto.AuthRequest;
-import com.fiberperu.demo.dto.AuthResponse;
+import com.fiberperu.demo.dto.auth.AuthRequest;
+import com.fiberperu.demo.dto.auth.AuthResponse;
 import com.fiberperu.demo.security.JwtTokenProvider;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -25,25 +25,33 @@ public class AuthController {
     private final JwtTokenProvider tokenProvider;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> authenticateUser(@Valid @RequestBody AuthRequest loginDto) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginDto.getUsernameOrEmail(),
-                        loginDto.getPassword()
-                )
-        );
+    public ResponseEntity<AuthResponse> iniciarSesion(
+            @Valid @RequestBody AuthRequest request
+    ) {
+        Authentication authentication =
+                authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                request.getCorreo(),
+                                request.getPassword()
+                        )
+                );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = tokenProvider.generateToken(authentication);
+        SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
 
-        Set<String> roles = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toSet());
+        String token =
+                tokenProvider.generateToken(authentication);
+
+        Set<String> roles =
+                authentication.getAuthorities()
+                        .stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toSet());
 
         AuthResponse response = AuthResponse.builder()
-                .accessToken(jwt)
+                .accessToken(token)
                 .tokenType("Bearer")
-                .username(authentication.getName())
+                .correo(authentication.getName())
                 .roles(roles)
                 .build();
 
