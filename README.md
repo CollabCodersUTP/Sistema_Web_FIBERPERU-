@@ -18,8 +18,10 @@
 9. [Reglas de Negocio Implementadas](#-reglas-de-negocio-implementadas)
 10. [Restricciones del Sistema](#-restricciones-del-sistema)
 11. [Indicadores KPI y Acuerdos de Nivel de Servicio (SLA)](#-indicadores-kpi-y-acuerdos-de-nivel-de-servicio-sla)
-12. [Planificación Ágil (Framework Scrum)](#-planificación-ágil-framework-scrum)
-13. [Equipo de Desarrollo](#-equipo-de-desarrollo)
+12. [Verificación y Despliegue V1 (Capítulo VII)](#-verificación-y-despliegue-v1)
+13. [Planificación Ágil (Framework Scrum)](#-planificación-ágil-framework-scrum)
+14. [Equipo de Desarrollo](#-equipo-de-desarrollo)
+
 
 ---
 
@@ -35,17 +37,18 @@ La solución busca centralizar la trazabilidad operativa desde el momento en que
 * **La Solución:** Una plataforma web centralizada que automatiza la asignación de personal técnico según su disponibilidad, controla el inventario mediante números de serie únicos, almacena evidencias multimedia y genera reportes para la toma de decisiones gerenciales.
 
 ---
-<h2 style="color: #059669; border-bottom: 3px solid #a7f3d0; padding-bottom: 8px;">⚙️ Arquitectura y Stack Tecnológico</h2>
 
+## ⚙️ Arquitectura y Stack Tecnológico
 El sistema ha sido estructurado bajo un modelo cliente-servidor robusto, seguro y escalable:
 
-* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #0284c7;">☕ **Backend:**</span> Java 21, Spring Boot 3.3.4, Spring Data JPA, Hibernate, Spring Security, BCrypt y JSON Web Tokens (JWT).
-* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #db2777;">⚛️ **Frontend:**</span> Next.js / React, TypeScript, HTML5, CSS3, TailwindCSS.
-* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #4f46e5;">🐘 **Base de Datos:**</span> PostgreSQL 16 (dockerizado en entorno local / Azure Database for PostgreSQL).
-* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #ea580c;">🐙 **Control de Versiones:**</span> Git y GitHub (`main`, `develop`, feature branches).
-* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #2563eb;">🚀 **Integración Continua:**</span> GitHub Actions (compilación Maven y ejecución de pruebas).
-* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #0891b2;">☁️ **Entorno Cloud:**</span> Microsoft Azure (Azure App Service, Azure Blob Storage).
-* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #7c3aed;">🛠️ **Herramientas de Modelado:**</span> Bizagi Modeler (BPMN), Draw.io (DER/UML), Figma (Wireframes/Mockups), Postman.
+* **Backend:** Java 21, Spring Boot 3.3.4, Spring Data JPA, Hibernate, Spring Security, BCrypt y JSON Web Tokens (JWT).
+* **Frontend:** Next.js / React, TypeScript, HTML5, CSS3, TailwindCSS.
+* **Base de Datos:** PostgreSQL 16 (dockerizado en entorno local / Azure Database for PostgreSQL).
+* **Control de Versiones:** Git y GitHub (`main`, `develop`, feature branches).
+* **Integración Continua:** GitHub Actions (compilación Maven y ejecución de pruebas).
+* **Entorno Cloud:** Microsoft Azure (Azure App Service, Azure Blob Storage).
+* **Herramientas de Modelado:** Bizagi Modeler (BPMN), Draw.io (DER/UML), Figma (Wireframes/Mockups), Postman.
+
 ---
 
 ## 👥 Roles del Sistema
@@ -249,7 +252,36 @@ stateDiagram-v2
 
 ---
 
+## 🚀 Verificación y Despliegue V1
+
+> Documento formal extendido: [`documentacion/CAPITULO_VII_VERIFICACION_Y_DESPLIEGUE_V1.md`](./documentacion/CAPITULO_VII_VERIFICACION_Y_DESPLIEGUE_V1.md)
+
+### 7.1. Pruebas Funcionales y No Funcionales (Validación del Servicio)
+* **Validación de Funcionalidades (16 Casos CP-F):**
+  * Control de acceso y RBAC (`CP-F01` a `CP-F03`): emisión de tokens JWT, expiración y denegación HTTP 403 para accesos no autorizados.
+  * Solicitudes y Órdenes (`CP-F04` a `CP-F07`): registro, factibilidad técnica, generación de OT y programación de horarios.
+  * **Reglas de Negocio Críticas (`CP-F08`, `CP-F14`):**
+    * Detección y bloqueo automático de cruce de agendas para técnicos (`existeConflictoHorario`).
+    * Bloqueo de cierre de órdenes con evidencias observadas o sin equipos instalados (`validarCierreConforme`).
+  * Gestión de Evidencias (`CP-F11` a `CP-F13`): subida multipart/form-data de imágenes y PDFs, revisión y ciclo de subsanación.
+  * Seguimiento Público (`CP-F16`): consulta de estado por código de ticket.
+* **Pruebas No Funcionales (CP-NF):**
+  * Rendimiento (RNF-02): latencia promedio de **245 ms** (umbral objetivo $\le 2\text{ s}$).
+  * Seguridad (RNF-04 / RNF-06): hashes BCrypt `$2a$10$...`, mitigación de inyecciones SQL y sanitización XSS.
+  * Usabilidad (RNF-01): interfaces responsivas adaptadas para dispositivos móviles de técnicos en campo.
+
+### 7.2. Evidencia de Despliegue en Plataforma Cloud (Versión Inicial)
+* **Arquitectura en Microsoft Azure:**
+  * **Grupo de Recursos:** `rg-fiberperu-dev` (Región: `East US`).
+  * **Backend Web App:** `fiberperu-backend-api.azurewebsites.net` (Azure App Service Linux - Java 21 / Spring Boot 3.3.4).
+  * **Base de Datos:** Azure Database for PostgreSQL Flexible Server (`psql-fiberperu-dev`, SSL puerto 5432).
+  * **Almacenamiento Multimedia:** Azure Blob Storage (`stfiberperudev`, contenedor `evidencias-instalacion`).
+* **Automatización CI/CD:** Flujo continuo configurado en [`.github/workflows/cd-azure.yml`](./.github/workflows/cd-azure.yml) mediante GitHub Actions, integrando empaquetado Maven y despliegue automático hacia Azure App Service con perfiles de publicación y secretos encriptados.
+
+---
+
 ## 🏃 Planificación Ágil (Framework Scrum)
+
 
 El proyecto se gestiona bajo el marco de trabajo Scrum alineado a las fases del ciclo académico:
 
