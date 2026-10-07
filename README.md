@@ -35,18 +35,17 @@ La solución busca centralizar la trazabilidad operativa desde el momento en que
 * **La Solución:** Una plataforma web centralizada que automatiza la asignación de personal técnico según su disponibilidad, controla el inventario mediante números de serie únicos, almacena evidencias multimedia y genera reportes para la toma de decisiones gerenciales.
 
 ---
+<h2 style="color: #059669; border-bottom: 3px solid #a7f3d0; padding-bottom: 8px;">⚙️ Arquitectura y Stack Tecnológico</h2>
 
-## ⚙️ Arquitectura y Stack Tecnológico
 El sistema ha sido estructurado bajo un modelo cliente-servidor robusto, seguro y escalable:
 
-* **Backend:** Java 21, Spring Boot 3.3.4, Spring Data JPA, Hibernate, Spring Security, BCrypt y JSON Web Tokens (JWT).
-* **Frontend:** Next.js / React, TypeScript, HTML5, CSS3, TailwindCSS.
-* **Base de Datos:** PostgreSQL 16 (dockerizado en entorno local / Azure Database for PostgreSQL).
-* **Control de Versiones:** Git y GitHub (`main`, `develop`, feature branches).
-* **Integración Continua:** GitHub Actions (compilación Maven y ejecución de pruebas).
-* **Entorno Cloud:** Microsoft Azure (Azure App Service, Azure Blob Storage).
-* **Herramientas de Modelado:** Bizagi Modeler (BPMN), Draw.io (DER/UML), Figma (Wireframes/Mockups), Postman.
-
+* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #0284c7;">☕ **Backend:**</span> Java 21, Spring Boot 3.3.4, Spring Data JPA, Hibernate, Spring Security, BCrypt y JSON Web Tokens (JWT).
+* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #db2777;">⚛️ **Frontend:**</span> Next.js / React, TypeScript, HTML5, CSS3, TailwindCSS.
+* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #4f46e5;">🐘 **Base de Datos:**</span> PostgreSQL 16 (dockerizado en entorno local / Azure Database for PostgreSQL).
+* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #ea580c;">🐙 **Control de Versiones:**</span> Git y GitHub (`main`, `develop`, feature branches).
+* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #2563eb;">🚀 **Integración Continua:**</span> GitHub Actions (compilación Maven y ejecución de pruebas).
+* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #0891b2;">☁️ **Entorno Cloud:**</span> Microsoft Azure (Azure App Service, Azure Blob Storage).
+* <span style="background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #7c3aed;">🛠️ **Herramientas de Modelado:**</span> Bizagi Modeler (BPMN), Draw.io (DER/UML), Figma (Wireframes/Mockups), Postman.
 ---
 
 ## 👥 Roles del Sistema
