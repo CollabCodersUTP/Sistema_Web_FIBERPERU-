@@ -3,6 +3,7 @@ package com.fiberperu.demo.controller;
 import com.fiberperu.demo.dto.solicitud.EvaluarSolicitudRequest;
 import com.fiberperu.demo.dto.solicitud.SolicitudInstalacionRequest;
 import com.fiberperu.demo.dto.solicitud.SolicitudInstalacionResponse;
+import com.fiberperu.demo.service.AccesoRecursosService;
 import com.fiberperu.demo.service.SolicitudInstalacionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
 public class SolicitudInstalacionController {
 
     private final SolicitudInstalacionService solicitudService;
+    private final AccesoRecursosService accesoRecursosService;
 
     @GetMapping
     @PreAuthorize(
@@ -46,30 +48,34 @@ public class SolicitudInstalacionController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<SolicitudInstalacionResponse>
     buscarPorId(
-            @PathVariable Long id
+            @PathVariable Long id,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(
-                solicitudService.buscarResponsePorId(id)
-        );
+        SolicitudInstalacionResponse solicitud = solicitudService.buscarResponsePorId(id);
+        accesoRecursosService.verificarAccesoCliente(solicitud.getIdCliente(), authentication);
+        return ResponseEntity.ok(solicitud);
     }
 
     @GetMapping("/codigo/{codigo}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<SolicitudInstalacionResponse>
     buscarPorCodigo(
-            @PathVariable String codigo
+            @PathVariable String codigo,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(
-                solicitudService.buscarResponsePorCodigo(codigo)
-        );
+        SolicitudInstalacionResponse solicitud = solicitudService.buscarResponsePorCodigo(codigo);
+        accesoRecursosService.verificarAccesoCliente(solicitud.getIdCliente(), authentication);
+        return ResponseEntity.ok(solicitud);
     }
 
     @GetMapping("/cliente/{idCliente}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SolicitudInstalacionResponse>>
     listarPorCliente(
-            @PathVariable Long idCliente
+            @PathVariable Long idCliente,
+            Authentication authentication
     ) {
+        accesoRecursosService.verificarAccesoCliente(idCliente, authentication);
         return ResponseEntity.ok(
                 solicitudService.listarPorCliente(idCliente)
         );

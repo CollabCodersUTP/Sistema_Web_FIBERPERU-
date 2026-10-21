@@ -27,3 +27,17 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
   if (response.status === 204) return undefined as T;
   return response.json();
 }
+
+export async function fetchApiBlob(endpoint: string): Promise<Blob> {
+  const token = localStorage.getItem('fiberperu_token');
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Error HTTP ${response.status}: ${response.statusText}`);
+  }
+  return response.blob();
+}

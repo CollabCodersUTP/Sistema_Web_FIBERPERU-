@@ -4,11 +4,16 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.BlobHttpHeaders;
+import com.azure.storage.blob.models.BlobStorageException;
+import com.fiberperu.demo.exception.RecursoNoEncontradoException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -19,6 +24,8 @@ import java.util.UUID;
  */
 @Service
 public class AzureBlobStorageService {
+
+    private static final long TAMANO_MAXIMO_LECTURA = 10L * 1024 * 1024;
 
     private static final Set<String> TIPOS_PERMITIDOS = Set.of(
             "image/jpeg", "image/png", "application/pdf"
@@ -67,6 +74,52 @@ public class AzureBlobStorageService {
             throw new IllegalStateException(
                     "No fue posible leer el archivo de evidencia", exception
             );
+        }
+    }
+
+    public byte[] leerEvidencia(Long idOrden, String urlArchivo) {
+        if (connectionString == null || connectionString.isBlank()) {
+            throw new IllegalStateException("Azure Blob Storage no está configurado");
+        }
+
+        BlobContainerClient contenedor = new BlobServiceClientBuilder()
+                .connectionString(connectionString)
+                .buildClient()
+                .getBlobContainerClient(containerName);
+        String prefijo = contenedor.getBlobContainerUrl() + "/";
+        if (urlArchivo == null || !urlArchivo.startsWith(prefijo)) {
+            throw new RecursoNoEncontradoException(
+                    "Esta evidencia no tiene un archivo disponible en Azure"
+            );
+        }
+
+        String nombreBlob = URLDecoder.decode(
+                urlArchivo.substring(prefijo.length()), StandardCharsets.UTF_8
+        );
+        if (!nombreBlob.startsWith("ordenes/" + idOrden + "/")
+                || nombreBlob.contains("?") || nombreBlob.contains("#")) {
+            throw new RecursoNoEncontradoException(
+                    "Esta evidencia no tiene un archivo disponible en Azure"
+            );
+        }
+
+        BlobClient blob = contenedor.getBlobClient(nombreBlob);
+        try {
+            if (blob.getProperties().getBlobSize() > TAMANO_MAXIMO_LECTURA) {
+                throw new IllegalStateException(
+                        "El archivo supera el tamaño máximo permitido"
+                );
+            }
+            ByteArrayOutputStream contenido = new ByteArrayOutputStream();
+            blob.downloadStream(contenido);
+            return contenido.toByteArray();
+        } catch (BlobStorageException exception) {
+            if (exception.getStatusCode() == 404) {
+                throw new RecursoNoEncontradoException(
+                        "El archivo de evidencia no se encuentra en Azure"
+                );
+            }
+            throw exception;
         }
     }
 

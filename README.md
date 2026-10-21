@@ -43,6 +43,25 @@ El sistema ha sido estructurado bajo un modelo cliente-servidor robusto, seguro 
 
 ---
 
+## Configuración antes de publicar
+
+El backend lee estas variables de entorno en tiempo de ejecución:
+
+| Variable | Uso |
+| --- | --- |
+| `SPRING_DATASOURCE_URL` | URL JDBC de PostgreSQL. |
+| `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` | Credenciales de la base de datos. |
+| `JWT_SECRET` | Clave privada para firmar tokens; no incluirla en Git. |
+| `AZURE_STORAGE_CONNECTION_STRING` | Conexión al almacenamiento de evidencias. |
+| `AZURE_STORAGE_CONTAINER_NAME` | Contenedor de evidencias (por defecto, `evidencias`). |
+| `APP_CORS_ALLOWED_ORIGINS` | Origen(es) exacto(s) del frontend, separados por comas y sin barra final; por ejemplo, `https://portal.ejemplo.com`. |
+
+Para desarrollo local, CORS admite `http://localhost:3000` y `http://localhost:5173` sin configurar la última variable. En producción, establece `APP_CORS_ALLOWED_ORIGINS` con la URL real del frontend; no uses `*`. Si publicas el backend en Azure App Service, configura estas variables en **Configuración → Variables de entorno → Configuración de la aplicación** y mantén desactivada la configuración de CORS propia de App Service, porque la API ya la gestiona en Spring Security.
+
+El frontend usa `NEXT_PUBLIC_API_BASE_URL`, incluida en [`frontend/.env.example`](frontend/.env.example), con la URL pública completa de la API y `/api/v1` al final; por ejemplo, `https://api.ejemplo.com/api/v1`. Debe definirse **antes de compilar** Next.js: cambiarla después requiere volver a compilar y publicar el frontend. Nunca coloques secretos en variables `NEXT_PUBLIC_`.
+
+La base de datos debe tener creado el esquema de [`database/01_schema.sql`](database/01_schema.sql) antes de iniciar el backend, ya que Hibernate está configurado con `ddl-auto: validate`.
+
 ## 👥 Roles del Sistema
 El acceso a las funcionalidades del sistema está protegido mediante control de roles (RBAC):
 1. **Administrador:** Gestión total de usuarios, roles, permisos, catálogos de dispositivos, clientes, técnicos y reportes de desempeño[cite: 1].

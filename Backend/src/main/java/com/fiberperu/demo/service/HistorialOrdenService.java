@@ -8,6 +8,7 @@ import com.fiberperu.demo.exception.RecursoNoEncontradoException;
 import com.fiberperu.demo.repository.HistorialOrdenRepository;
 import com.fiberperu.demo.repository.OrdenTrabajoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,9 @@ public class HistorialOrdenService {
      * Se reserva para auditoría administrativa.
      */
     public List<HistorialOrdenResponse> listarTodos() {
-        return historialRepository.findAll()
+        return historialRepository.findAll(Sort.by(
+                        Sort.Order.desc("fechaHora"),
+                        Sort.Order.desc("idHistorial")))
                 .stream()
                 .map(this::convertirAResponse)
                 .toList();

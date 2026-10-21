@@ -36,6 +36,7 @@ public class OrdenTrabajoService {
     private final HistorialOrdenRepository historialRepository;
     private final OrdenDispositivoRepository ordenDispositivoRepository;
     private final EvidenciaInstalacionRepository evidenciaRepository;
+    private final ObservacionServicioRepository observacionRepository;
 
     public List<OrdenTrabajoResponse> listarTodas() {
         return ordenRepository.findAll()
@@ -341,6 +342,11 @@ public class OrdenTrabajoService {
                         "Solo un coordinador o administrador puede cerrar la orden"
                 );
             }
+            if (!"EN_PROCESO".equals(orden.getEstado())) {
+                throw new IllegalStateException(
+                        "La orden debe estar EN_PROCESO antes de finalizarla"
+                );
+            }
             validarCierreConforme(orden);
         }
 
@@ -400,6 +406,16 @@ public class OrdenTrabajoService {
         )) {
             throw new IllegalStateException(
                     "Todas las evidencias deben estar aprobadas antes del cierre"
+            );
+        }
+
+        if (orden.getTecnico() == null || !observacionRepository
+                .existsByOrdenIdOrdenAndTecnicoIdTecnicoAndEstadoTrue(
+                        orden.getIdOrden(),
+                        orden.getTecnico().getIdTecnico()
+                )) {
+            throw new IllegalStateException(
+                    "El técnico asignado debe registrar al menos una observación antes del cierre"
             );
         }
     }
