@@ -70,6 +70,8 @@ El frontend usa `NEXT_PUBLIC_API_BASE_URL`, incluida en [`frontend/.env.example`
 
 La base de datos debe tener creado el esquema de [`database/01_schema.sql`](database/01_schema.sql) antes de iniciar el backend, ya que Hibernate está configurado con `ddl-auto: validate`.
 
+La integración continua de GitHub Actions compila y prueba `Backend/pom.xml` con Java 21 y una base PostgreSQL temporal. El flujo de despliegue a `fiberperu-api-dev` se ejecuta manualmente desde **Actions → Azure Deployment CD → Run workflow**, una vez integrado en la rama predeterminada. Antes de ejecutarlo, configura el secreto del repositorio `AZURE_WEBAPP_PUBLISH_PROFILE` con el perfil de publicación de ese App Service. No subas el perfil al repositorio.
+
 ## 👥 Roles del Sistema
 El acceso a las funcionalidades del sistema está protegido mediante control de acceso basado en roles (RBAC):
 1. **Administrador:** Responsable de la gestión de usuarios, roles, permisos, clientes, técnicos, catálogo de dispositivos y visualización de reportes / KPIs globales.
