@@ -9,17 +9,43 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: fiberperu_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d fiberperu_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/fiberperu_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: ci-only-fiberperu-test-key-0123456789abcdef0123456789abcdef
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
         cache: maven
+        cache-dependency-path: Backend/pom.xml
 
-    - name: Build with Maven (demo package)
-      run: mvn -B package --file demo/pom.xml -DskipTests=false
+    - name: Create test database schema
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+        PGPASSWORD="$SPRING_DATASOURCE_PASSWORD" psql -h localhost -U postgres -d fiberperu_db -v ON_ERROR_STOP=1 -f database/01_schema.sql
+
+    - name: Build and test backend
+      run: mvn -B verify --file Backend/pom.xml

@@ -1,6 +1,7 @@
 package com.fiberperu.demo.controller;
 
 import com.fiberperu.demo.dto.orden.*;
+import com.fiberperu.demo.service.AccesoRecursosService;
 import com.fiberperu.demo.service.OrdenTrabajoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.List;
 public class OrdenTrabajoController {
 
     private final OrdenTrabajoService ordenTrabajoService;
+    private final AccesoRecursosService accesoRecursosService;
 
     @GetMapping
     @PreAuthorize(
@@ -43,8 +45,10 @@ public class OrdenTrabajoController {
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrdenTrabajoResponse> buscarPorId(
-            @PathVariable Long id
+            @PathVariable Long id,
+            Authentication authentication
     ) {
+        accesoRecursosService.verificarAccesoOrden(id, authentication);
         return ResponseEntity.ok(
                 ordenTrabajoService.buscarResponsePorId(id)
         );
@@ -53,11 +57,12 @@ public class OrdenTrabajoController {
     @GetMapping("/codigo/{codigo}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrdenTrabajoResponse> buscarPorCodigo(
-            @PathVariable String codigo
+            @PathVariable String codigo,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(
-                ordenTrabajoService.buscarResponsePorCodigo(codigo)
-        );
+        OrdenTrabajoResponse orden = ordenTrabajoService.buscarResponsePorCodigo(codigo);
+        accesoRecursosService.verificarAccesoOrden(orden.getIdOrden(), authentication);
+        return ResponseEntity.ok(orden);
     }
 
     @PostMapping
@@ -126,6 +131,7 @@ public class OrdenTrabajoController {
             @RequestBody CambiarEstadoOrdenRequest request,
             Authentication authentication
     ) {
+        accesoRecursosService.verificarAccesoOrden(id, authentication);
         boolean puedeCerrar = authentication.getAuthorities().stream()
                 .anyMatch(authority ->
                         authority.getAuthority().equals("ROLE_ADMINISTRADOR")

@@ -9,4 +9,9 @@ public interface ObservacionServicioRepository
         extends JpaRepository<ObservacionServicio, Long> {
 
     List<ObservacionServicio> findByOrdenIdOrden(Long idOrden);
+
+    boolean existsByOrdenIdOrdenAndTecnicoIdTecnicoAndEstadoTrue(
+            Long idOrden,
+            Long idTecnico
+    );
 }

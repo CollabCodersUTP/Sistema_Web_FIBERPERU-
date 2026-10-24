@@ -7,6 +7,10 @@ import com.fiberperu.demo.service.EvidenciaInstalacionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -14,6 +18,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/evidencias")
@@ -46,6 +53,34 @@ public class EvidenciaInstalacionController {
         );
     }
 
+    @GetMapping("/{id}/archivo")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'COORDINADOR', 'TECNICO')")
+    public ResponseEntity<byte[]> verArchivo(
+            @PathVariable Long id, Authentication authentication
+    ) {
+        boolean accesoGeneral = authentication.getAuthorities().stream()
+                .anyMatch(authority -> Set.of(
+                        "ROLE_ADMINISTRADOR", "ROLE_COORDINADOR"
+                ).contains(authority.getAuthority()));
+        var archivo = evidenciaService.obtenerArchivo(
+                id, authentication.getName(), accesoGeneral
+        );
+        String tipoGuardado = archivo.tipo() == null ? ""
+                : archivo.tipo().trim().toLowerCase(Locale.ROOT);
+        String tipo = Set.of("image/jpeg", "image/png", "application/pdf")
+                .contains(tipoGuardado)
+                ? tipoGuardado : "application/octet-stream";
+
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(MediaType.parseMediaType(tipo))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline()
+                                .filename(archivo.nombre(), StandardCharsets.UTF_8)
+                                .build().toString())
+                .body(archivo.contenido());
+    }
+
     @PostMapping(value = "/archivo", consumes = "multipart/form-data")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'TECNICO')")
     public ResponseEntity<EvidenciaInstalacionResponse> registrarArchivo(
@@ -68,6 +103,24 @@ public class EvidenciaInstalacionController {
                         esAdministrador
                 )
         );
+    }
+
+    @PostMapping(value = "/{id}/reenviar-archivo", consumes = "multipart/form-data")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'TECNICO')")
+    public ResponseEntity<EvidenciaInstalacionResponse> reenviarArchivo(
+            @PathVariable Long id,
+            @RequestParam MultipartFile archivo,
+            @RequestParam(required = false) String descripcion,
+            Authentication authentication
+    ) {
+        boolean esAdministrador = authentication.getAuthorities().stream()
+                .anyMatch(authority ->
+                        authority.getAuthority().equals("ROLE_ADMINISTRADOR")
+                );
+
+        return ResponseEntity.ok(evidenciaService.reenviarArchivo(
+                id, archivo, descripcion, authentication.getName(), esAdministrador
+        ));
     }
 
     @GetMapping("/orden/{idOrden}")

@@ -5,16 +5,19 @@ import com.fiberperu.demo.dto.evidencia.EvidenciaInstalacionResponse;
 import com.fiberperu.demo.dto.evidencia.ValidarEvidenciaRequest;
 import com.fiberperu.demo.entity.Coordinador;
 import com.fiberperu.demo.entity.EvidenciaInstalacion;
+import com.fiberperu.demo.entity.HistorialOrden;
 import com.fiberperu.demo.entity.OrdenTrabajo;
 import com.fiberperu.demo.entity.Tecnico;
 import com.fiberperu.demo.entity.Usuario;
 import com.fiberperu.demo.exception.RecursoNoEncontradoException;
 import com.fiberperu.demo.repository.CoordinadorRepository;
 import com.fiberperu.demo.repository.EvidenciaInstalacionRepository;
+import com.fiberperu.demo.repository.HistorialOrdenRepository;
 import com.fiberperu.demo.repository.OrdenTrabajoRepository;
 import com.fiberperu.demo.repository.TecnicoRepository;
 import com.fiberperu.demo.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,6 +32,8 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class EvidenciaInstalacionService {
 
+    public record ArchivoEvidencia(byte[] contenido, String nombre, String tipo) {}
+
     private static final Set<String> ESTADOS_VALIDACION =
             Set.of(
                     "APROBADA",
@@ -37,6 +42,7 @@ public class EvidenciaInstalacionService {
             );
 
     private final EvidenciaInstalacionRepository evidenciaRepository;
+    private final HistorialOrdenRepository historialRepository;
     private final OrdenTrabajoRepository ordenTrabajoRepository;
     private final UsuarioRepository usuarioRepository;
     private final CoordinadorRepository coordinadorRepository;
@@ -88,6 +94,38 @@ public class EvidenciaInstalacionService {
         );
     }
 
+    public ArchivoEvidencia obtenerArchivo(
+            Long idEvidencia, String correoResponsable, boolean accesoGeneral
+    ) {
+        EvidenciaInstalacion evidencia = buscarEntidadPorId(idEvidencia);
+        if (!accesoGeneral) {
+            Usuario usuario = usuarioRepository.findByCorreo(correoResponsable)
+                    .orElseThrow(() -> new AccessDeniedException(
+                            "No tiene permisos para ver esta evidencia"
+                    ));
+            Tecnico tecnico = tecnicoRepository
+                    .findByUsuarioIdUsuario(usuario.getIdUsuario())
+                    .orElseThrow(() -> new AccessDeniedException(
+                            "No tiene permisos para ver esta evidencia"
+                    ));
+            if (evidencia.getOrden().getTecnico() == null
+                    || !tecnico.getIdTecnico().equals(
+                            evidencia.getOrden().getTecnico().getIdTecnico())) {
+                throw new AccessDeniedException(
+                        "No tiene permisos para ver esta evidencia"
+                );
+            }
+        }
+
+        return new ArchivoEvidencia(
+                azureBlobStorageService.leerEvidencia(
+                        evidencia.getOrden().getIdOrden(), evidencia.getUrlArchivo()
+                ),
+                evidencia.getNombreArchivo(),
+                evidencia.getTipoArchivo()
+        );
+    }
+
     /**
      * Busca la entidad para operaciones internas.
      */
@@ -131,7 +169,7 @@ public class EvidenciaInstalacionService {
                         .tipoArchivo(
                                 request.getTipoArchivo()
                                         .trim()
-                                        .toUpperCase(Locale.ROOT)
+                                        .toLowerCase(Locale.ROOT)
                         )
                         .urlArchivo(
                                 request.getUrlArchivo().trim()
@@ -200,6 +238,94 @@ public class EvidenciaInstalacionService {
                 .build();
 
         return registrar(request);
+    }
+
+    /**
+     * Reenvía una evidencia observada con un archivo corregido. El mismo
+     * registro vuelve a PENDIENTE para que el coordinador lo revise otra vez.
+     */
+    @Transactional
+    public EvidenciaInstalacionResponse reenviarArchivo(
+            Long idEvidencia,
+            MultipartFile archivo,
+            String descripcion,
+            String correoResponsable,
+            boolean esAdministrador
+    ) {
+        EvidenciaInstalacion evidencia = buscarEntidadPorId(idEvidencia);
+        if (!"OBSERVADA".equals(evidencia.getEstadoValidacion())) {
+            throw new IllegalStateException(
+                    "Solo se puede reenviar una evidencia observada"
+            );
+        }
+
+        OrdenTrabajo orden = evidencia.getOrden();
+        validarOrdenParaEvidencia(orden);
+
+        Usuario usuario = usuarioRepository.findByCorreo(correoResponsable)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Usuario autenticado no encontrado: " + correoResponsable
+                ));
+        if (!esAdministrador) {
+            Tecnico tecnico = tecnicoRepository
+                    .findByUsuarioIdUsuario(usuario.getIdUsuario())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "El usuario autenticado no posee un perfil de técnico"
+                    ));
+            if (orden.getTecnico() == null
+                    || !orden.getTecnico().getIdTecnico().equals(tecnico.getIdTecnico())) {
+                throw new IllegalStateException(
+                        "Solo el técnico asignado puede reenviar evidencias de esta orden"
+                );
+            }
+        }
+
+        String descripcionNueva = normalizarTextoOpcional(descripcion);
+        if (descripcionNueva != null && descripcionNueva.length() > 250) {
+            throw new IllegalArgumentException(
+                    "La descripción no debe superar 250 caracteres"
+            );
+        }
+
+        String urlAnterior = evidencia.getUrlArchivo();
+        String urlNueva = azureBlobStorageService
+                .almacenarEvidencia(orden.getIdOrden(), archivo);
+
+        Coordinador validadorAnterior = evidencia.getCoordinadorValidador();
+        if (validadorAnterior != null) {
+            historialRepository.save(HistorialOrden.builder()
+                    .orden(orden)
+                    .usuario(validadorAnterior.getUsuario())
+                    .tipoEvento("VALIDACION_EVIDENCIA")
+                    .estadoAnterior("PENDIENTE")
+                    .estadoNuevo("OBSERVADA")
+                    .fechaHora(evidencia.getFechaValidacion())
+                    .motivo(evidencia.getObservacionValidacion())
+                    .build());
+        }
+        String referenciaAnterior = "Evidencia #" + idEvidencia + ": " + urlAnterior;
+        historialRepository.save(HistorialOrden.builder()
+                .orden(orden)
+                .usuario(usuario)
+                .tipoEvento("REENVIO_EVIDENCIA")
+                .estadoAnterior("OBSERVADA")
+                .estadoNuevo("PENDIENTE")
+                .motivo(referenciaAnterior.length() <= 500
+                        ? referenciaAnterior : urlAnterior)
+                .build());
+
+        evidencia.setNombreArchivo(archivo.getOriginalFilename());
+        evidencia.setTipoArchivo(archivo.getContentType().toLowerCase(Locale.ROOT));
+        evidencia.setUrlArchivo(urlNueva);
+        if (descripcionNueva != null) {
+            evidencia.setDescripcion(descripcionNueva);
+        }
+        evidencia.setEstadoValidacion("PENDIENTE");
+        evidencia.setCoordinadorValidador(null);
+        evidencia.setFechaValidacion(null);
+        // El motivo de la revisión previa permanece visible hasta la nueva revisión.
+
+        return convertirAResponse(evidenciaRepository.save(evidencia));
     }
 
     /**
@@ -358,10 +484,11 @@ public class EvidenciaInstalacionService {
     private void validarOrdenParaEvidencia(
             OrdenTrabajo orden
     ) {
-        if ("CANCELADA".equals(orden.getEstado())) {
+        if ("CANCELADA".equals(orden.getEstado())
+                || "FINALIZADA".equals(orden.getEstado())) {
             throw new IllegalStateException(
                     "No se pueden registrar evidencias "
-                            + "en una orden cancelada"
+                            + "en una orden cerrada"
             );
         }
 

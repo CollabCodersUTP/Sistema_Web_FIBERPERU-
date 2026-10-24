@@ -114,7 +114,7 @@ public class OrdenDispositivoService {
                         )
                 );
 
-        validarOrdenDisponibleParaAsignacion(orden);
+        validarOrdenAbierta(orden);
         validarAccesoAOrden(orden, correoResponsable, accesoGlobal);
 
         Dispositivo dispositivo = dispositivoRepository
@@ -187,6 +187,7 @@ public class OrdenDispositivoService {
         validarAccesoAOrden(
                 asignacion.getOrden(), correoResponsable, accesoGlobal
         );
+        validarOrdenAbierta(asignacion.getOrden());
 
         if (asignacion.getFechaRetiro() != null) {
             throw new IllegalStateException(
@@ -233,6 +234,7 @@ public class OrdenDispositivoService {
         validarAccesoAOrden(
                 asignacion.getOrden(), correoResponsable, accesoGlobal
         );
+        validarOrdenAbierta(asignacion.getOrden());
 
         if (asignacion.getFechaRetiro() != null
                 || "RETIRADO".equals(
@@ -310,14 +312,13 @@ public class OrdenDispositivoService {
                 .build();
     }
 
-    private void validarOrdenDisponibleParaAsignacion(
+    private void validarOrdenAbierta(
             OrdenTrabajo orden
     ) {
         if ("FINALIZADA".equals(orden.getEstado())
                 || "CANCELADA".equals(orden.getEstado())) {
             throw new IllegalStateException(
-                    "No se pueden asignar dispositivos "
-                            + "a una orden cerrada"
+                    "No se pueden modificar dispositivos de una orden cerrada"
             );
         }
     }
