@@ -1,10 +1,12 @@
 package com.fiberperu.demo.controller;
 
 import com.fiberperu.demo.dto.historial.HistorialOrdenResponse;
+import com.fiberperu.demo.service.AccesoRecursosService;
 import com.fiberperu.demo.service.HistorialOrdenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.List;
 public class HistorialOrdenController {
 
     private final HistorialOrdenService historialOrdenService;
+    private final AccesoRecursosService accesoRecursosService;
 
     /**
      * Lista todos los eventos históricos.
@@ -53,8 +56,10 @@ public class HistorialOrdenController {
     )
     public ResponseEntity<List<HistorialOrdenResponse>>
     listarPorOrden(
-            @PathVariable Long idOrden
+            @PathVariable Long idOrden,
+            Authentication authentication
     ) {
+        accesoRecursosService.verificarAccesoOrden(idOrden, authentication);
         return ResponseEntity.ok(
                 historialOrdenService.listarPorOrden(idOrden)
         );

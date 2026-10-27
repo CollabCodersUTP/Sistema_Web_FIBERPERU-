@@ -3,6 +3,7 @@ package com.fiberperu.demo.controller;
 import com.fiberperu.demo.dto.asignacion.OrdenDispositivoRequest;
 import com.fiberperu.demo.dto.asignacion.OrdenDispositivoResponse;
 import com.fiberperu.demo.dto.asignacion.RetirarDispositivoRequest;
+import com.fiberperu.demo.service.AccesoRecursosService;
 import com.fiberperu.demo.service.OrdenDispositivoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
 public class OrdenDispositivoController {
 
     private final OrdenDispositivoService ordenDispositivoService;
+    private final AccesoRecursosService accesoRecursosService;
 
     @GetMapping
     @PreAuthorize(
@@ -37,11 +39,12 @@ public class OrdenDispositivoController {
             "hasAnyRole('ADMINISTRADOR', 'COORDINADOR', 'TECNICO')"
     )
     public ResponseEntity<OrdenDispositivoResponse> buscarPorId(
-            @PathVariable Long id
+            @PathVariable Long id,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(
-                ordenDispositivoService.buscarResponsePorId(id)
-        );
+        OrdenDispositivoResponse asignacion = ordenDispositivoService.buscarResponsePorId(id);
+        accesoRecursosService.verificarAccesoOrden(asignacion.getIdOrden(), authentication);
+        return ResponseEntity.ok(asignacion);
     }
 
     @GetMapping("/orden/{idOrden}")
@@ -50,8 +53,10 @@ public class OrdenDispositivoController {
     )
     public ResponseEntity<List<OrdenDispositivoResponse>>
     listarPorOrden(
-            @PathVariable Long idOrden
+            @PathVariable Long idOrden,
+            Authentication authentication
     ) {
+        accesoRecursosService.verificarAccesoOrden(idOrden, authentication);
         return ResponseEntity.ok(
                 ordenDispositivoService.listarPorOrden(idOrden)
         );
@@ -79,6 +84,7 @@ public class OrdenDispositivoController {
             @Valid @RequestBody OrdenDispositivoRequest request,
             Authentication authentication
     ) {
+        accesoRecursosService.verificarAccesoOrden(request.getIdOrden(), authentication);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(
@@ -99,6 +105,8 @@ public class OrdenDispositivoController {
             @PathVariable Long id,
             Authentication authentication
     ) {
+        OrdenDispositivoResponse asignacion = ordenDispositivoService.buscarResponsePorId(id);
+        accesoRecursosService.verificarAccesoOrden(asignacion.getIdOrden(), authentication);
         return ResponseEntity.ok(
                 ordenDispositivoService
                         .marcarComoInstalado(
@@ -118,6 +126,8 @@ public class OrdenDispositivoController {
             @Valid @RequestBody RetirarDispositivoRequest request,
             Authentication authentication
     ) {
+        OrdenDispositivoResponse asignacion = ordenDispositivoService.buscarResponsePorId(id);
+        accesoRecursosService.verificarAccesoOrden(asignacion.getIdOrden(), authentication);
         return ResponseEntity.ok(
                         ordenDispositivoService.retirar(
                                 id,

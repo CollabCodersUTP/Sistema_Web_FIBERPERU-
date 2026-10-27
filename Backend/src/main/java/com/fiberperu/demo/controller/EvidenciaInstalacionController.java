@@ -3,6 +3,7 @@ package com.fiberperu.demo.controller;
 import com.fiberperu.demo.dto.evidencia.EvidenciaInstalacionRequest;
 import com.fiberperu.demo.dto.evidencia.EvidenciaInstalacionResponse;
 import com.fiberperu.demo.dto.evidencia.ValidarEvidenciaRequest;
+import com.fiberperu.demo.service.AccesoRecursosService;
 import com.fiberperu.demo.service.EvidenciaInstalacionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 public class EvidenciaInstalacionController {
 
     private final EvidenciaInstalacionService evidenciaService;
+    private final AccesoRecursosService accesoRecursosService;
 
     @GetMapping
     @PreAuthorize(
@@ -46,11 +48,12 @@ public class EvidenciaInstalacionController {
     )
     public ResponseEntity<EvidenciaInstalacionResponse>
     buscarPorId(
-            @PathVariable Long id
+            @PathVariable Long id,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(
-                evidenciaService.buscarResponsePorId(id)
-        );
+        EvidenciaInstalacionResponse evidencia = evidenciaService.buscarResponsePorId(id);
+        accesoRecursosService.verificarAccesoOrden(evidencia.getIdOrden(), authentication);
+        return ResponseEntity.ok(evidencia);
     }
 
     @GetMapping("/{id}/archivo")
@@ -89,6 +92,7 @@ public class EvidenciaInstalacionController {
             @RequestParam(required = false) String descripcion,
             Authentication authentication
     ) {
+        accesoRecursosService.verificarAccesoOrden(idOrden, authentication);
         boolean esAdministrador = authentication.getAuthorities().stream()
                 .anyMatch(authority ->
                         authority.getAuthority().equals("ROLE_ADMINISTRADOR")
@@ -113,6 +117,8 @@ public class EvidenciaInstalacionController {
             @RequestParam(required = false) String descripcion,
             Authentication authentication
     ) {
+        EvidenciaInstalacionResponse evidencia = evidenciaService.buscarResponsePorId(id);
+        accesoRecursosService.verificarAccesoOrden(evidencia.getIdOrden(), authentication);
         boolean esAdministrador = authentication.getAuthorities().stream()
                 .anyMatch(authority ->
                         authority.getAuthority().equals("ROLE_ADMINISTRADOR")
@@ -129,8 +135,10 @@ public class EvidenciaInstalacionController {
     )
     public ResponseEntity<List<EvidenciaInstalacionResponse>>
     listarPorOrden(
-            @PathVariable Long idOrden
+            @PathVariable Long idOrden,
+            Authentication authentication
     ) {
+        accesoRecursosService.verificarAccesoOrden(idOrden, authentication);
         return ResponseEntity.ok(
                 evidenciaService.listarPorOrden(idOrden)
         );
@@ -154,8 +162,10 @@ public class EvidenciaInstalacionController {
     public ResponseEntity<EvidenciaInstalacionResponse>
     registrar(
             @Valid
-            @RequestBody EvidenciaInstalacionRequest request
+            @RequestBody EvidenciaInstalacionRequest request,
+            Authentication authentication
     ) {
+        accesoRecursosService.verificarAccesoOrden(request.getIdOrden(), authentication);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(
