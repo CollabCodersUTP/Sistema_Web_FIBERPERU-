@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -260,6 +261,21 @@ public class OrdenTrabajoService {
             );
         }
 
+        boolean yaTeniaProgramacion = orden.getFechaProgramada() != null
+                || orden.getHoraProgramada() != null;
+        boolean cambioHorario = yaTeniaProgramacion
+                && (!Objects.equals(orden.getFechaProgramada(), request.getFechaProgramada())
+                || !Objects.equals(orden.getHoraProgramada(), request.getHoraProgramada()));
+        String motivoReprogramacion = request.getMotivoReprogramacion() == null
+                ? null
+                : request.getMotivoReprogramacion().trim();
+
+        if (cambioHorario && (motivoReprogramacion == null || motivoReprogramacion.isBlank())) {
+            throw new IllegalArgumentException(
+                    "El motivo de reprogramación es obligatorio cuando cambia la fecha o la hora"
+            );
+        }
+
         if (orden.getTecnico() != null
                 && ordenRepository.existeConflictoHorario(
                         orden.getTecnico().getIdTecnico(),
@@ -279,6 +295,9 @@ public class OrdenTrabajoService {
 
         orden.setFechaProgramada(request.getFechaProgramada());
         orden.setHoraProgramada(request.getHoraProgramada());
+        if (cambioHorario) {
+            orden.setMotivoReprogramacion(motivoReprogramacion);
+        }
         orden.setEstado("PROGRAMADA");
 
         OrdenTrabajo actualizada =
@@ -287,10 +306,12 @@ public class OrdenTrabajoService {
         registrarHistorial(
                 actualizada,
                 usuarioResponsable,
-                "PROGRAMACION",
+                cambioHorario ? "REPROGRAMACION" : "PROGRAMACION",
                 estadoAnterior,
                 "PROGRAMADA",
-                "Programación de la instalación"
+                cambioHorario
+                        ? motivoReprogramacion
+                        : "Programación de la instalación"
         );
 
         return convertirAResponse(actualizada);
@@ -333,6 +354,14 @@ public class OrdenTrabajoService {
                 && orden.getTecnico() == null) {
             throw new IllegalStateException(
                     "La orden debe tener un técnico asignado"
+            );
+        }
+
+        if ("EN_PROCESO".equals(estadoNuevo)
+                && (orden.getFechaProgramada() == null
+                || orden.getHoraProgramada() == null)) {
+            throw new IllegalStateException(
+                    "La orden debe tener fecha y hora programadas antes de iniciar"
             );
         }
 

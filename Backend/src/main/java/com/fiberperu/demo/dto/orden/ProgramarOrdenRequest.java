@@ -2,6 +2,7 @@ package com.fiberperu.demo.dto.orden;
 
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,4 +25,7 @@ public class ProgramarOrdenRequest {
 
     @NotNull(message = "La hora programada es obligatoria")
     private LocalTime horaProgramada;
+
+    @Size(max = 500, message = "El motivo de reprogramación no puede superar 500 caracteres")
+    private String motivoReprogramacion;
 }
