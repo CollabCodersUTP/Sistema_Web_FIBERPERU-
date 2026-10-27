@@ -1,5 +1,7 @@
 # CAPÍTULO VII: VERIFICACIÓN Y DESPLIEGUE V1
 
+> **Borrador anterior.** Este archivo conserva una matriz inicial de 16 casos. La versión vigente del capítulo VII, con 42 casos y evidencia del despliegue inicial, está en el informe APF2.
+
 **Asignatura:** Curso Integrador II: Sistemas (Sección 35174) — Universidad Tecnológica del Perú (UTP)  
 **Proyecto:** Sistema web para la gestión y seguimiento de la instalación de dispositivos de red en FIBERPERU E.I.R.L.  
 **Equipo:** Zhayr Zarzosa Porras, Aaron Said Pasco Rios, Peter Amedh Adams Saldivar, Darwin Joel Santamaria Suyon  

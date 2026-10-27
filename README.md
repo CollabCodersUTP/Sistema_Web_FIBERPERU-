@@ -15,7 +15,7 @@
 6. [Product Backlog](#-product-backlog)
 7. [Requerimientos Funcionales (SRS)](#-requerimientos-funcionales-srs)
 8. [Requerimientos No Funcionales](#-requerimientos-no-funcionales)
-9. [Reglas de Negocio Implementadas](#-reglas-de-negocio-implementadas)
+9. [Reglas de Negocio](#-reglas-de-negocio)
 10. [Restricciones del Sistema](#-restricciones-del-sistema)
 11. [Indicadores KPI y Acuerdos de Nivel de Servicio (SLA)](#-indicadores-kpi-y-acuerdos-de-nivel-de-servicio-sla)
 12. [Verificación y Despliegue V1 (Capítulo VII)](#-verificación-y-despliegue-v1)
@@ -179,19 +179,19 @@ Los requerimientos no funcionales definen los criterios de calidad, arquitectura
 | **RNF-05** | Autorización | Control de acceso basado en roles (RBAC) con denegación explícita (HTTP 403 Forbidden) para accesos no autorizados. | Reglas de autorización en endpoints Spring Security (`hasAnyRole`, `hasRole`). |
 | **RNF-06** | Seguridad (Validación) | Sanitización y validación estricta de datos de entrada para mitigar inyecciones SQL y ataques Cross-Site Scripting (XSS). | Bean Validation (`@Valid`, `@NotBlank`), consultas parametrizadas JPA y escaping en frontend. |
 | **RNF-07** | Disponibilidad | Arquitectura diseñada para un Uptime operativo del 99.9% durante ventanas de servicio. | Configuración de servicios desacoplados en contenedores y despliegue en Microsoft Azure. |
-| **RNF-08** | Respaldo | Políticas de respaldo (*Backups*) automáticos diarios de la base de datos relacional. | Configuración de copias de seguridad automáticas y retención en PostgreSQL / Azure Storage. |
+| **RNF-08** | Respaldo | Políticas de respaldo (*Backups*) automáticos diarios de la base de datos relacional. | Se comprobó un respaldo y una restauración manual. La automatización diaria y su retención siguen como política propuesta. |
 | **RNF-09** | Compatibilidad | Funcionamiento multiplataforma sin pérdida de funciones en navegadores Chromium (Chrome, Edge) y Mozilla Firefox. | Estándares web modernos ECMAScript 6+ y CSS3 validados. |
 | **RNF-10** | Escalabilidad | Arquitectura multicapa desacoplada (Controladores $\to$ Servicios $\to$ Repositorios $\to$ Base de Datos). | Patrón de capas Spring Boot que permite incorporar nuevos módulos sin afectar el núcleo. |
 | **RNF-11** | Mantenibilidad | Versionado semántico del código fuente en Git/GitHub con gestión de dependencias estandarizada en Maven y npm/pnpm. | `pom.xml` estructurado, `.gitignore` exhaustivo y ramas organizadas (`main`, `develop`). |
 | **RNF-12** | Trazabilidad | Registro automático de campos de auditoría (`fecha_creacion`, `fecha_actualizacion`, usuario responsable). | Campos de auditoría en entidades y tabla dedicada `historial_orden` para trazabilidad de estados. |
-| **RNF-13** | Integración Continua | Flujo de integración y despliegue continuo (CI/CD) automatizado con GitHub Actions hacia la nube de Azure. | Pipeline en `.github/workflows` para compilar y validar pruebas unitarias. |
+| **RNF-13** | Integración Continua | Flujo de integración y despliegue continuo (CI/CD) automatizado con GitHub Actions hacia la nube de Azure. | El flujo CI compila y prueba el backend; el despliegue del backend se ejecuta manualmente. La automatización del despliegue corresponde al siguiente avance. |
 | **RNF-14** | Almacenamiento | Almacenamiento desacoplado de evidencias multimedia en Cloud/Blob Storage, conservando solo metadatos y URL en base de datos. | Manejo de archivos en servicio local/Azure Blob Storage y persistencia en tabla `evidencia_instalacion`. |
 
 ---
 
-## ⚖️ Reglas de Negocio Implementadas
+## ⚖️ Reglas de Negocio
 
-Las reglas de negocio representan la lógica medular que rige el proceso de instalación de FIBERPERU E.I.R.L. y han sido codificadas en la capa de servicios:
+Las reglas de negocio describen el proceso de instalación de FIBERPERU E.I.R.L. La matriz RN del informe APF2 distingue cuáles están verificadas, parciales o pendientes en la V1; la tabla siguiente resume los componentes y validaciones relacionados:
 
 ```mermaid
 stateDiagram-v2
@@ -212,15 +212,15 @@ stateDiagram-v2
 | Código | Categoría | Regla de Negocio | Detalle y Validación en el Código |
 | :---: | :---: | :--- | :--- |
 | **RN-01** | Solicitudes | Toda solicitud de instalación deberá estar asociada a un cliente registrado en el sistema. | Validado en `SolicitudInstalacionService`: se verifica la existencia del `Cliente` antes de persistir. |
-| **RN-02** | Órdenes | Una orden de instalación solo podrá generarse a partir de una solicitud previamente registrada y aprobada. | `OrdenTrabajoService.generarDesdeSolicitud`: valida que la solicitud exista y su estado sea `APROBADA`. |
+| **RN-02** | Órdenes | Una orden de instalación solo podrá generarse a partir de una solicitud previamente registrada y aprobada. | `OrdenTrabajoService.crear()`: valida que la solicitud exista y su estado sea `APROBADA`. |
 | **RN-03** | Programación | Cada orden debe tener un coordinador responsable, una fecha programada y un técnico asignado antes de iniciar su ejecución. | Bloqueo en transición de estado a `EN_PROCESO` si la orden carece de técnico o fecha. |
-| **RN-04** | Asignación | Un técnico no podrá ser asignado a dos instalaciones programadas para la misma fecha y horario (**Prevención de cruce de agenda**). | `OrdenRepository.existeConflictoHorario()` evalúa fecha, hora y técnico antes de permitir la asignación. |
+| **RN-04** | Asignación | Un técnico no podrá ser asignado a dos instalaciones programadas para la misma fecha y horario (**Prevención de cruce de agenda**). | `OrdenTrabajoRepository.existeConflictoHorario()` evalúa fecha, hora y técnico antes de permitir la asignación. |
 | **RN-05** | Asignación | Solo podrán asignarse técnicos que se encuentren activos y marcados como disponibles en el sistema. | Comprobación de `tecnico.getEstado() == true` y `tecnico.getDisponibilidad() == true`. |
 | **RN-06** | Dispositivos | Los dispositivos de red deberán registrarse obligatoriamente con su tipo, marca, modelo y número de serie único. | Restricción de unicidad `UNIQUE(numero_serie)` en tabla `dispositivo` y validación `@NotBlank`. |
 | **RN-07** | Dispositivos | Un dispositivo identificado mediante número de serie único no podrá asignarse simultáneamente a más de una orden activa. | `OrdenDispositivoService` valida que el dispositivo no cuente con una asignación activa previa. |
 | **RN-08** | Seguimiento | El estado de una orden debe seguir el flujo estricto: `REGISTRADA` $\to$ `PROGRAMADA` $\to$ `ASIGNADA` $\to$ `EN_PROCESO` $\to$ `OBSERVADA` $\to$ `FINALIZADA` o `CANCELADA`. | Control en `OrdenTrabajoService.ESTADOS_PERMITIDOS` y validaciones de precedencia de estado. |
-| **RN-09** | Autorización | El técnico solo podrá modificar o interactuar con las órdenes de instalación que tenga formalmente asignadas a su nombre. | Endpoint `/api/ordenes/mis-ordenes` filtra estrictamente por el `idTecnico` asociado al usuario en sesión. |
-| **RN-10** | Ejecución | Para marcar una instalación como finalizada, el técnico debe registrar obligatoriamente los equipos instalados, observaciones y evidencias multimedia. | `validarCierreConforme`: exige al menos 1 dispositivo con estado `INSTALADO` y evidencias cargadas. |
+| **RN-09** | Autorización | El técnico solo podrá modificar o interactuar con las órdenes de instalación que tenga formalmente asignadas a su nombre. | Endpoint `/api/v1/ordenes/mis-ordenes` filtra por el técnico asociado al usuario autenticado. |
+| **RN-10** | Ejecución | Para marcar una instalación como finalizada, el técnico debe registrar obligatoriamente los equipos instalados, observaciones y evidencias multimedia. | `validarCierreConforme` exige un dispositivo `INSTALADO`, evidencias aprobadas y al menos una observación del técnico asignado. |
 | **RN-11** | Validación | Una orden solo podrá cerrarse definitivamente después de que el coordinador revise y apruebe formalmente las evidencias. | `validarCierreConforme`: valida que ninguna evidencia permanezca en estado `PENDIENTE` u `OBSERVADA` (todas deben estar `APROBADA`). |
 | **RN-12** | Validación | Si las evidencias presentan observaciones o inconsistencias, la orden debe regresar al técnico para su subsanación antes del cierre. | Transición a estado `OBSERVADA` con registro del comentario de subsanación requerido. |
 | **RN-13** | Reprogramación | Toda reprogramación exige el registro de la nueva fecha, el motivo justificado del cambio y el usuario responsable. | `OrdenTrabajoService.programar`: exige parámetro `motivo` y lo registra en la orden y en el historial. |
@@ -277,29 +277,21 @@ stateDiagram-v2
 
 ## 🚀 Verificación y Despliegue V1
 
-> Documento formal extendido: [`documentacion/CAPITULO_VII_VERIFICACION_Y_DESPLIEGUE_V1.md`](./documentacion/CAPITULO_VII_VERIFICACION_Y_DESPLIEGUE_V1.md)
+> El [borrador anterior del capítulo VII](./documentacion/CAPITULO_VII_VERIFICACION_Y_DESPLIEGUE_V1.md) se conserva como referencia. La matriz y las evidencias vigentes están en el capítulo VII del informe APF2.
 
 ### 7.1. Pruebas Funcionales y No Funcionales (Validación del Servicio)
-* **Validación de Funcionalidades (16 Casos CP-F):**
-  * Control de acceso y RBAC (`CP-F01` a `CP-F03`): emisión de tokens JWT, expiración y denegación HTTP 403 para accesos no autorizados.
-  * Solicitudes y Órdenes (`CP-F04` a `CP-F07`): registro, factibilidad técnica, generación de OT y programación de horarios.
-  * **Reglas de Negocio Críticas (`CP-F08`, `CP-F14`):**
-    * Detección y bloqueo automático de cruce de agendas para técnicos (`existeConflictoHorario`).
-    * Bloqueo de cierre de órdenes con evidencias observadas o sin equipos instalados (`validarCierreConforme`).
-  * Gestión de Evidencias (`CP-F11` a `CP-F13`): subida multipart/form-data de imágenes y PDFs, revisión y ciclo de subsanación.
-  * Seguimiento Público (`CP-F16`): consulta de estado por código de ticket.
-* **Pruebas No Funcionales (CP-NF):**
-  * Rendimiento (RNF-02): latencia promedio de **245 ms** (umbral objetivo $\le 2\text{ s}$).
-  * Seguridad (RNF-04 / RNF-06): hashes BCrypt `$2a$10$...`, mitigación de inyecciones SQL y sanitización XSS.
-  * Usabilidad (RNF-01): interfaces responsivas adaptadas para dispositivos móviles de técnicos en campo.
+* El informe APF2 reúne 42 casos (`C-01` a `C-42`) con resultados y evidencias, incluidos escenarios alternativos y negativos de solicitudes, órdenes, dispositivos, autorización y exportación.
+* Para RNF-02 se registraron 11 consultas locales a `GET /api/v1/ordenes`: promedio de **66,63 ms** y máximo de **85,31 ms**. La medición corresponde a esa consulta y a ese entorno; no representa el rendimiento de toda la aplicación publicada.
+* La seguridad y el diseño responsivo se documentan con sus pruebas y límites en el apartado 7.1 del informe.
 
 ### 7.2. Evidencia de Despliegue en Plataforma Cloud (Versión Inicial)
 * **Arquitectura en Microsoft Azure:**
   * **Grupo de Recursos:** `rg-fiberperu-dev` (Región: `East US`).
   * **Backend Web App:** `fiberperu-api-dev` (Azure App Service Linux - Java 21 / Spring Boot 3.5.16).
-  * **Base de Datos:** Azure Database for PostgreSQL Flexible Server (`psql-fiberperu-dev`, SSL puerto 5432).
+  * **Frontend:** [Azure Static Web Apps](https://victorious-dune-0d1a9701e.4.azurestaticapps.net/).
+  * **Base de Datos:** Azure Database for PostgreSQL Flexible Server (`psql-fiberperu-dev`), con `fiberperu_db` restaurada.
   * **Almacenamiento Multimedia:** Azure Blob Storage (`stfiberperudev`, contenedor `evidencias-instalacion`).
-* **Publicación del backend:** [`.github/workflows/cd-azure.yml`](./.github/workflows/cd-azure.yml) permite ejecutar manualmente el empaquetado Maven y el despliegue a Azure App Service mediante un perfil de publicación guardado como secreto del repositorio. La evidencia del despliegue inicial de APF2 está en el apartado 7.2 del informe.
+* **Publicación del backend:** [`.github/workflows/cd-azure.yml`](./.github/workflows/cd-azure.yml) permite ejecutar manualmente el empaquetado Maven y el despliegue a Azure App Service mediante un perfil de publicación guardado como secreto del repositorio. El informe APF2 documenta una solicitud de prueba registrada desde el sitio publicado y las limitaciones aún abiertas.
 
 ---
 
