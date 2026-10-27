@@ -41,9 +41,9 @@ La solución busca centralizar la trazabilidad operativa desde el momento en que
 ## ⚙️ Arquitectura y Stack Tecnológico
 El sistema ha sido estructurado bajo un modelo cliente-servidor robusto, seguro y escalable:
 
-* **Backend:** Java 21, Spring Boot 3.3.4, Spring Data JPA, Hibernate, Spring Security, BCrypt y JSON Web Tokens (JWT).
+* **Backend:** Java 21, Spring Boot 3.5.16, Spring Data JPA, Hibernate, Spring Security, BCrypt y JSON Web Tokens (JWT).
 * **Frontend:** Next.js / React, TypeScript, HTML5, CSS3, TailwindCSS.
-* **Base de Datos:** PostgreSQL 16 (dockerizado en entorno local / Azure Database for PostgreSQL).
+* **Base de Datos:** PostgreSQL 18 en el entorno local y Azure Database for PostgreSQL en la nube.
 * **Control de Versiones:** Git y GitHub (`main`, `develop`, feature branches).
 * **Integración Continua:** GitHub Actions (compilación Maven y ejecución de pruebas).
 * **Entorno Cloud:** Microsoft Azure (Azure App Service, Azure Blob Storage).
@@ -69,6 +69,8 @@ Para desarrollo local, CORS admite `http://localhost:3000` y `http://localhost:5
 El frontend usa `NEXT_PUBLIC_API_BASE_URL`, incluida en [`frontend/.env.example`](frontend/.env.example), con la URL pública completa de la API y `/api/v1` al final; por ejemplo, `https://api.ejemplo.com/api/v1`. Debe definirse **antes de compilar** Next.js: cambiarla después requiere volver a compilar y publicar el frontend. Nunca coloques secretos en variables `NEXT_PUBLIC_`.
 
 La base de datos debe tener creado el esquema de [`database/01_schema.sql`](database/01_schema.sql) antes de iniciar el backend, ya que Hibernate está configurado con `ddl-auto: validate`.
+
+Los pasos para preparar la base de datos, ejecutar ambos módulos y comprobarlos localmente están en la [guía técnica de la V1](documentacion/GUIA_TECNICA_V1.md).
 
 La integración continua de GitHub Actions compila y prueba `Backend/pom.xml` con Java 21 y una base PostgreSQL temporal. El flujo de despliegue a `fiberperu-api-dev` se ejecuta manualmente desde **Actions → Azure Deployment CD → Run workflow**, una vez integrado en la rama predeterminada. Antes de ejecutarlo, configura el secreto del repositorio `AZURE_WEBAPP_PUBLISH_PROFILE` con el perfil de publicación de ese App Service. No subas el perfil al repositorio.
 
@@ -234,7 +236,7 @@ stateDiagram-v2
 | :---: | :---: | :--- |
 | **RS-01** | Arquitectura | El sistema será desarrollado estrictamente como una aplicación web multiplataforma (no de escritorio). |
 | **RS-02** | Académica / Tecnológica | El backend debe desarrollarse en un 100% con Java y Spring Boot, cumpliendo con la consigna del Curso Integrador II. |
-| **RS-03** | Arquitectura | La persistencia de datos debe residir exclusivamente en una base de datos relacional centralizada (PostgreSQL 16). |
+| **RS-03** | Arquitectura | La información debe almacenarse en una base de datos relacional centralizada (PostgreSQL). |
 | **RS-04** | Infraestructura | La infraestructura en la nube está destinada a desplegarse en Microsoft Azure (Azure for Students). |
 | **RS-05** | Operativa / Seguridad | El acceso a la plataforma requiere conexión a internet y credenciales de usuario previamente habilitadas. |
 | **RS-06** | Cronograma | El ciclo completo de desarrollo y sustentación está acotado al periodo académico (10 de agosto al 7 de diciembre de 2026). |
@@ -294,10 +296,10 @@ stateDiagram-v2
 ### 7.2. Evidencia de Despliegue en Plataforma Cloud (Versión Inicial)
 * **Arquitectura en Microsoft Azure:**
   * **Grupo de Recursos:** `rg-fiberperu-dev` (Región: `East US`).
-  * **Backend Web App:** `fiberperu-backend-api.azurewebsites.net` (Azure App Service Linux - Java 21 / Spring Boot 3.3.4).
+  * **Backend Web App:** `fiberperu-api-dev` (Azure App Service Linux - Java 21 / Spring Boot 3.5.16).
   * **Base de Datos:** Azure Database for PostgreSQL Flexible Server (`psql-fiberperu-dev`, SSL puerto 5432).
   * **Almacenamiento Multimedia:** Azure Blob Storage (`stfiberperudev`, contenedor `evidencias-instalacion`).
-* **Automatización CI/CD:** Flujo continuo configurado en [`.github/workflows/cd-azure.yml`](./.github/workflows/cd-azure.yml) mediante GitHub Actions, integrando empaquetado Maven y despliegue automático hacia Azure App Service con perfiles de publicación y secretos encriptados.
+* **Publicación del backend:** [`.github/workflows/cd-azure.yml`](./.github/workflows/cd-azure.yml) permite ejecutar manualmente el empaquetado Maven y el despliegue a Azure App Service mediante un perfil de publicación guardado como secreto del repositorio. La evidencia del despliegue inicial de APF2 está en el apartado 7.2 del informe.
 
 ---
 
