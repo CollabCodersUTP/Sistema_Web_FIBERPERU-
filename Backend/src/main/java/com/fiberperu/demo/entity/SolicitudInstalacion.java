@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Entity
 @Table(name = "solicitud_instalacion")
@@ -51,7 +52,7 @@ public class SolicitudInstalacion {
     @PrePersist
     protected void antesDeCrear() {
         if (fechaSolicitud == null) {
-            fechaSolicitud = LocalDateTime.now();
+            fechaSolicitud = LocalDateTime.now(ZoneId.of("America/Lima"));
         }
 
         if (estado == null) {

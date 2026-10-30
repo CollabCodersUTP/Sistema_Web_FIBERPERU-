@@ -68,7 +68,7 @@ Para desarrollo local, CORS admite `http://localhost:3000` y `http://localhost:5
 
 El frontend usa `NEXT_PUBLIC_API_BASE_URL`, incluida en [`frontend/.env.example`](frontend/.env.example), con la URL pública completa de la API y `/api/v1` al final; por ejemplo, `https://api.ejemplo.com/api/v1`. Debe definirse **antes de compilar** Next.js: cambiarla después requiere volver a compilar y publicar el frontend. Nunca coloques secretos en variables `NEXT_PUBLIC_`.
 
-La base de datos debe tener creado el esquema de [`database/01_schema.sql`](database/01_schema.sql) antes de iniciar el backend, ya que Hibernate está configurado con `ddl-auto: validate`.
+La base de datos debe tener creado el esquema de [`database/01_schema.sql`](database/01_schema.sql) antes de iniciar el backend, ya que Hibernate está configurado con `ddl-auto: validate`. Antes de publicar la generación automática de códigos de solicitud, ejecutar [`database/04_codigos_solicitud.sql`](database/04_codigos_solicitud.sql) sobre la base ya existente; no volver a ejecutar `01_schema.sql` en Azure.
 
 Los pasos para preparar la base de datos, ejecutar ambos módulos y comprobarlos localmente están en la [guía técnica de la V1](documentacion/GUIA_TECNICA_V1.md).
 

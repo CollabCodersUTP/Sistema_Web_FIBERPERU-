@@ -13,6 +13,9 @@ Esta guía describe cómo preparar y comprobar el sistema FIBERPERU en un entorn
 1. Crear la base vacía `fiberperu_db` en PostgreSQL.
 2. Ejecutar [`database/01_schema.sql`](../database/01_schema.sql) sobre esa base. **Este script elimina y recrea tablas**; usarlo únicamente en una base de desarrollo que pueda restablecerse.
 3. Ejecutar [`database/02_seeds.sql`](../database/02_seeds.sql) si se necesitan las cuentas y datos de demostración. Los datos demo no deben cargarse en una base de producción.
+4. Ejecutar [`database/04_codigos_solicitud.sql`](../database/04_codigos_solicitud.sql) después de cargar los datos iniciales. El script prepara el consecutivo anual y reserva los bloques aleatorios existentes.
+
+En una base ya poblada, ejecutar solo `04_codigos_solicitud.sql` después de hacer un respaldo. No volver a ejecutar `01_schema.sql`, porque elimina las tablas y sus datos.
 
 El backend usa `spring.jpa.hibernate.ddl-auto: validate`: comprueba el esquema al iniciar, pero no crea las tablas.
 

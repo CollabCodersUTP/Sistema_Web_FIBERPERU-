@@ -72,6 +72,13 @@ CREATE TABLE solicitud_instalacion (
   CHECK (resultado_evaluacion IS NULL OR resultado_evaluacion IN ('APROBADA','RECHAZADA')),
  observacion_evaluacion VARCHAR(500)
 );
+CREATE TABLE solicitud_codigo_consecutivo (
+ anio INTEGER PRIMARY KEY,
+ ultimo_numero INTEGER NOT NULL CHECK (ultimo_numero BETWEEN 1 AND 9999)
+);
+CREATE TABLE solicitud_codigo_bloque (
+ bloque VARCHAR(6) PRIMARY KEY CHECK (bloque ~ '^[A-Z0-9]{6}$')
+);
 CREATE TABLE orden_trabajo (
  id_orden BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
  id_solicitud BIGINT NOT NULL UNIQUE REFERENCES solicitud_instalacion(id_solicitud) ON DELETE RESTRICT,

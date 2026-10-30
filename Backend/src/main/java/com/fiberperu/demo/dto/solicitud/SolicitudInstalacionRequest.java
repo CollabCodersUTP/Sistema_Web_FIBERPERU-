@@ -16,13 +16,6 @@ public class SolicitudInstalacionRequest {
 
     private Long idCliente;
 
-    @NotBlank(message = "El código de solicitud es obligatorio")
-    @Size(
-            max = 20,
-            message = "El código de solicitud no debe superar 20 caracteres"
-    )
-    private String codigoSolicitud;
-
     @NotBlank(message = "El tipo de servicio es obligatorio")
     @Size(
             max = 100,

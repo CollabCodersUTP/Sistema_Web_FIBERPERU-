@@ -27,28 +27,18 @@ public class SeguimientoPublicoService {
             throw new IllegalArgumentException("Debe ingresar un código de seguimiento");
         }
 
-        SolicitudInstalacion solicitud;
-        OrdenTrabajo orden;
-
-        if (codigo.startsWith("SOL-")) {
-            solicitud = solicitudRepository.findByCodigoSolicitud(codigo)
-                    .orElseThrow(() -> new RecursoNoEncontradoException(
-                            "Solicitud no encontrada con código: " + codigo
-                    ));
-            orden = ordenRepository.findBySolicitudIdSolicitud(
-                    solicitud.getIdSolicitud()
-            ).orElse(null);
-        } else if (codigo.startsWith("OT-")) {
-            orden = ordenRepository.findByCodigoOrden(codigo)
-                    .orElseThrow(() -> new RecursoNoEncontradoException(
-                            "Orden no encontrada con código: " + codigo
-                    ));
-            solicitud = orden.getSolicitud();
-        } else {
+        if (!codigo.startsWith("SOL-")) {
             throw new IllegalArgumentException(
-                    "El código debe comenzar con SOL- u OT-"
+                    "El código de seguimiento debe comenzar con SOL-"
             );
         }
+        SolicitudInstalacion solicitud = solicitudRepository.findByCodigoSolicitud(codigo)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Solicitud no encontrada con código: " + codigo
+                ));
+        OrdenTrabajo orden = ordenRepository.findBySolicitudIdSolicitud(
+                solicitud.getIdSolicitud()
+        ).orElse(null);
 
         String nombreTecnico = null;
         if (orden != null && orden.getTecnico() != null) {
@@ -59,7 +49,6 @@ public class SeguimientoPublicoService {
         return SeguimientoPublicoResponse.builder()
                 .codigoConsultado(codigo)
                 .codigoSolicitud(solicitud.getCodigoSolicitud())
-                .codigoOrden(orden == null ? null : orden.getCodigoOrden())
                 .tipoServicio(solicitud.getTipoServicio())
                 .fechaSolicitud(solicitud.getFechaSolicitud())
                 .fechaProgramada(orden == null ? null : orden.getFechaProgramada())

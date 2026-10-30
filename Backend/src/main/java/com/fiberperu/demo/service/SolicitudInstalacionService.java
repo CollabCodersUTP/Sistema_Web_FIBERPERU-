@@ -25,6 +25,7 @@ public class SolicitudInstalacionService {
     private final SolicitudInstalacionRepository solicitudRepository;
     private final ClienteRepository clienteRepository;
     private final UsuarioRepository usuarioRepository;
+    private final CodigoSolicitudService codigoSolicitudService;
 
     public List<SolicitudInstalacionResponse> listarTodas() {
         return solicitudRepository.findAll()
@@ -98,14 +99,6 @@ public class SolicitudInstalacionService {
             String correoResponsable,
             boolean esCliente
     ) {
-        if (solicitudRepository
-                .findByCodigoSolicitud(request.getCodigoSolicitud())
-                .isPresent()) {
-            throw new IllegalArgumentException(
-                    "El código de solicitud ya está registrado"
-            );
-        }
-
         Cliente cliente;
         if (esCliente) {
             Usuario usuario = usuarioRepository.findByCorreo(correoResponsable)
@@ -137,9 +130,7 @@ public class SolicitudInstalacionService {
         SolicitudInstalacion solicitud =
                 SolicitudInstalacion.builder()
                         .cliente(cliente)
-                        .codigoSolicitud(
-                                request.getCodigoSolicitud().trim()
-                        )
+                        .codigoSolicitud(codigoSolicitudService.generar())
                         .tipoServicio(
                                 request.getTipoServicio().trim()
                         )

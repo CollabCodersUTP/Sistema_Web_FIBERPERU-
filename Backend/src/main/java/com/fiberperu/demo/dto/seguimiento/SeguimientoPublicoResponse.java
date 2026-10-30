@@ -17,7 +17,6 @@ public class SeguimientoPublicoResponse {
 
     private String codigoConsultado;
     private String codigoSolicitud;
-    private String codigoOrden;
     private String tipoServicio;
     private LocalDateTime fechaSolicitud;
     private LocalDate fechaProgramada;
