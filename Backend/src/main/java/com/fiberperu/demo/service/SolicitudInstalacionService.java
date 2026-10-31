@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 
@@ -176,6 +178,13 @@ public class SolicitudInstalacionService {
             );
         }
 
+        if (solicitud.getResultadoEvaluacion() == null
+                && solicitud.getFechaEvaluacion() == null) {
+            solicitud.setFechaEvaluacion(
+                    LocalDateTime.now(ZoneId.of("America/Lima"))
+            );
+        }
+
         solicitud.setResultadoEvaluacion(resultado);
         solicitud.setObservacionEvaluacion(
                 normalizarTextoOpcional(request.getObservacion())
@@ -218,6 +227,9 @@ public class SolicitudInstalacionService {
                 )
                 .fechaSolicitud(
                         solicitud.getFechaSolicitud()
+                )
+                .fechaEvaluacion(
+                        solicitud.getFechaEvaluacion()
                 )
                 .estado(solicitud.getEstado())
                 .resultadoEvaluacion(

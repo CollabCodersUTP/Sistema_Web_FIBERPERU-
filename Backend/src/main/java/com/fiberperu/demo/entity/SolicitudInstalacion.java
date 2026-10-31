@@ -39,6 +39,9 @@ public class SolicitudInstalacion {
     @Column(name = "fecha_solicitud", nullable = false, updatable = false)
     private LocalDateTime fechaSolicitud;
 
+    @Column(name = "fecha_evaluacion")
+    private LocalDateTime fechaEvaluacion;
+
     @Builder.Default
     @Column(name = "estado", nullable = false, length = 30)
     private String estado = "REGISTRADA";

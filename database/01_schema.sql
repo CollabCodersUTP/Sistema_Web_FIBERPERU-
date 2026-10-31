@@ -66,6 +66,7 @@ CREATE TABLE solicitud_instalacion (
  codigo_solicitud VARCHAR(20) NOT NULL UNIQUE, tipo_servicio VARCHAR(100) NOT NULL,
  descripcion_servicio VARCHAR(500) NOT NULL, direccion_instalacion VARCHAR(250) NOT NULL,
  fecha_solicitud TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ fecha_evaluacion TIMESTAMP,
  estado VARCHAR(30) NOT NULL DEFAULT 'REGISTRADA'
   CHECK (estado IN ('REGISTRADA','EN_EVALUACION','APROBADA','RECHAZADA','CANCELADA')),
  resultado_evaluacion VARCHAR(30)

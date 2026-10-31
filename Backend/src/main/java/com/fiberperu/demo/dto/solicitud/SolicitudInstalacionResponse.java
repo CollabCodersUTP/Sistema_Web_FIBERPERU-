@@ -22,6 +22,7 @@ public class SolicitudInstalacionResponse {
     private String descripcionServicio;
     private String direccionInstalacion;
     private LocalDateTime fechaSolicitud;
+    private LocalDateTime fechaEvaluacion;
     private String estado;
     private String resultadoEvaluacion;
     private String observacionEvaluacion;
