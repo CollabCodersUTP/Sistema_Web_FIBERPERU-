@@ -72,7 +72,7 @@ La base de datos debe tener creado el esquema de [`database/01_schema.sql`](data
 
 Los pasos para preparar la base de datos, ejecutar ambos módulos y comprobarlos localmente están en la [guía técnica de la V1](documentacion/GUIA_TECNICA_V1.md).
 
-La integración continua de GitHub Actions compila y prueba `Backend/pom.xml` con Java 21 y una base PostgreSQL temporal. El flujo de despliegue a `fiberperu-api-dev` se ejecuta manualmente desde **Actions → Azure Deployment CD → Run workflow**, una vez integrado en la rama predeterminada. Antes de ejecutarlo, configura el secreto del repositorio `AZURE_WEBAPP_PUBLISH_PROFILE` con el perfil de publicación de ese App Service. No subas el perfil al repositorio.
+La integración continua de GitHub Actions compila y prueba `Backend/pom.xml` con Java 21 y una base PostgreSQL temporal. El flujo de despliegue a `fiberperu-api-dev` se ejecuta manualmente desde **Actions → Azure Deployment CD → Run workflow**, una vez integrado en la rama predeterminada. Para iniciar sesión en Azure utiliza OIDC y los secretos del repositorio `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` y `AZURE_SUBSCRIPTION_ID`.
 
 ## 👥 Roles del Sistema
 El acceso a las funcionalidades del sistema está protegido mediante control de acceso basado en roles (RBAC):
@@ -184,7 +184,7 @@ Los requerimientos no funcionales definen los criterios de calidad, arquitectura
 | **RNF-10** | Escalabilidad | Arquitectura multicapa desacoplada (Controladores $\to$ Servicios $\to$ Repositorios $\to$ Base de Datos). | Patrón de capas Spring Boot que permite incorporar nuevos módulos sin afectar el núcleo. |
 | **RNF-11** | Mantenibilidad | Versionado semántico del código fuente en Git/GitHub con gestión de dependencias estandarizada en Maven y npm/pnpm. | `pom.xml` estructurado, `.gitignore` exhaustivo y ramas organizadas (`main`, `develop`). |
 | **RNF-12** | Trazabilidad | Registro automático de campos de auditoría (`fecha_creacion`, `fecha_actualizacion`, usuario responsable). | Campos de auditoría en entidades y tabla dedicada `historial_orden` para trazabilidad de estados. |
-| **RNF-13** | Integración Continua | Flujo de integración y despliegue continuo (CI/CD) automatizado con GitHub Actions hacia la nube de Azure. | El flujo CI compila y prueba el backend; el despliegue del backend se ejecuta manualmente. La automatización del despliegue corresponde al siguiente avance. |
+| **RNF-13** | Integración Continua | Flujo de integración y despliegue continuo (CI/CD) automatizado con GitHub Actions hacia la nube de Azure. | El flujo CI compila y prueba el backend en cada cambio a `main` o `develop`; el flujo CD publica el backend en Azure cuando se inicia manualmente desde GitHub Actions. |
 | **RNF-14** | Almacenamiento | Almacenamiento desacoplado de evidencias multimedia en Cloud/Blob Storage, conservando solo metadatos y URL en base de datos. | Manejo de archivos en servicio local/Azure Blob Storage y persistencia en tabla `evidencia_instalacion`. |
 
 ---
@@ -289,9 +289,9 @@ stateDiagram-v2
   * **Grupo de Recursos:** `rg-fiberperu-dev` (Región: `East US`).
   * **Backend Web App:** `fiberperu-api-dev` (Azure App Service Linux - Java 21 / Spring Boot 3.5.16).
   * **Frontend:** [Azure Static Web Apps](https://victorious-dune-0d1a9701e.4.azurestaticapps.net/).
-  * **Base de Datos:** Azure Database for PostgreSQL Flexible Server (`psql-fiberperu-dev`), con `fiberperu_db` restaurada.
-  * **Almacenamiento Multimedia:** Azure Blob Storage (`stfiberperudev`, contenedor `evidencias-instalacion`).
-* **Publicación del backend:** [`.github/workflows/cd-azure.yml`](./.github/workflows/cd-azure.yml) permite ejecutar manualmente el empaquetado Maven y el despliegue a Azure App Service mediante un perfil de publicación guardado como secreto del repositorio. El informe APF2 documenta una solicitud de prueba registrada desde el sitio publicado y las limitaciones aún abiertas.
+  * **Base de Datos:** Azure Database for PostgreSQL Flexible Server (`fiberperu-pg-p01`), con `fiberperu_db` restaurada.
+  * **Almacenamiento Multimedia:** Azure Blob Storage (`stfiberperu2026p01`, contenedor privado `evidencias`).
+* **Publicación del backend:** [`.github/workflows/cd-azure.yml`](./.github/workflows/cd-azure.yml) permite ejecutar manualmente el empaquetado Maven y el despliegue a Azure App Service. El acceso a Azure se realiza mediante OIDC. El capítulo IX del informe APF3 documenta la ejecución satisfactoria de este flujo.
 
 ---
 
