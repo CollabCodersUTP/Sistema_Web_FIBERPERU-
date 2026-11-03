@@ -29,14 +29,28 @@
 .export-options summary { cursor:pointer; }
 .export-options>div { position:absolute;right:0;top:calc(100% + 8px);z-index:5;width:250px;max-width:calc(100vw - 40px);padding:14px;border:1px solid var(--line);border-radius:8px;background:white;box-shadow:0 8px 24px #17365d20; }
 .export-options small { display:block;margin-top:10px;color:var(--muted);line-height:1.5; }
-.avisos-tecnico { margin-bottom:16px; }
-.avisos-lista { display:grid;gap:8px;max-height:280px;overflow-y:auto; }
-.aviso-item { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:#f8fafc; }
-.aviso-item.sin-leer { border-color:#a5d1f4;background:#edf6ff; }
-.aviso-item>div { display:grid;gap:4px; }
+.topbar-actions { display:flex;align-items:center;gap:10px;margin-left:auto; }
+.avisos-tecnico { position:relative;flex:none; }
+.avisos-trigger { position:relative;display:grid;place-items:center;width:38px;height:38px;border:0;border-radius:50%;background:transparent;color:var(--ink); }
+.avisos-trigger:hover,.avisos-trigger[aria-expanded="true"] { background:#e6f2ff; }
+.avisos-trigger:focus-visible,.avisos-cerrar:focus-visible { outline:2px solid var(--blue);outline-offset:2px; }
+.avisos-badge { position:absolute;top:0;right:0;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:10px;background:#e44545;color:white;font-size:10px;font-weight:700; }
+.avisos-popover { position:absolute;right:0;top:calc(100% + 12px);z-index:12;width:min(380px,calc(100vw - 28px));max-height:calc(100dvh - 82px);overflow:hidden;border:1px solid var(--line);border-radius:12px;background:white;box-shadow:0 12px 32px #0b2b5238;color:var(--ink); }
+.avisos-heading { display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid var(--line); }
+.avisos-heading h2 { margin:0;font-size:16px; }
+.avisos-heading p { margin:4px 0 0;color:var(--muted);font-size:11px; }
+.avisos-cerrar { width:27px;height:27px;border:0;border-radius:50%;background:#eef3f8;color:#52657e;font-size:21px;line-height:1; }
+.avisos-lista { display:grid;max-height:350px;overflow-y:auto; }
+.aviso-item { display:grid;gap:5px;padding:13px 16px;border-bottom:1px solid var(--line);background:#fff;overflow-wrap:anywhere; }
+.aviso-item:last-child { border-bottom:0; }
+.aviso-item.sin-leer { background:#edf6ff; }
 .aviso-item b { font-size:12px; }
-.aviso-item span { font-size:12px; }
+.aviso-item span { font-size:12px;line-height:1.4; }
 .aviso-item small { color:var(--muted);font-size:10px; }
+.aviso-item button { justify-self:start;margin-top:5px; }
+.avisos-vacio,.avisos-error { margin:0;padding:16px;color:var(--muted);font-size:12px;line-height:1.4; }
+.avisos-error { color:#a05f00;background:#fff5e5; }
 @media (max-width:850px) { .filter-grid { grid-template-columns:1fr 1fr; } }
 @media (max-width:570px) { .filter-grid,.detail-summary { grid-template-columns:1fr; } }
+@media (max-width:570px) { .avisos-popover { position:fixed;top:58px;right:12px;left:12px;width:auto; } }
 @media (max-width:850px) { .sidebar { width:62px;padding:18px 8px; }.brand { padding:0 5px 22px; }.brand strong { font-size:0; }.brand strong:before { content:'FP';font-size:15px; }.brand span,.nav-item { font-size:0; }.nav-item { justify-content:center;padding:12px; }.nav-item i { font-size:15px; }.sidebar-footer { font-size:0; }.topbar,.content { padding-left:18px;padding-right:18px; }.metrics { grid-template-columns:repeat(2,1fr); }.dashboard-grid { grid-template-columns:1fr; } } @media (max-width:570px) { .topbar { padding:0 14px; }.topbar>span { display:none; }.profile { margin-left:auto; }.profile>div { display:none; }.content { padding:20px 14px; }.page-title,.client-hero { align-items:stretch;flex-direction:column; }.metrics,.welcome-cards,.tracking-result dl { grid-template-columns:1fr; }.hero-panel { padding:32px 25px; }.hero-panel h1 { font-size:27px; }.form-grid.two { grid-template-columns:1fr; }.form-grid .full { grid-column:auto; }.track-panel form { display:grid; }.primary { width:100%; }.page-title .primary { width:auto; }.hero-actions .primary,.hero-actions .secondary { width:auto; } }
