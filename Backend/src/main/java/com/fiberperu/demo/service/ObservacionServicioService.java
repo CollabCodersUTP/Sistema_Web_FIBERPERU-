@@ -158,6 +158,7 @@ public class ObservacionServicioService {
 
         ObservacionServicio observacion =
                 buscarEntidadPorId(idObservacion);
+        validarOrdenAbierta(observacion.getOrden());
 
         if (!Boolean.TRUE.equals(observacion.getEstado())) {
             throw new IllegalStateException(
@@ -183,6 +184,7 @@ public class ObservacionServicioService {
     ) {
         ObservacionServicio observacion =
                 buscarEntidadPorId(idObservacion);
+        validarOrdenAbierta(observacion.getOrden());
 
         observacion.setEstado(estado);
 
@@ -226,17 +228,21 @@ public class ObservacionServicioService {
     private void validarOrdenParaObservacion(
             OrdenTrabajo orden
     ) {
-        if ("CANCELADA".equals(orden.getEstado())
-                || "FINALIZADA".equals(orden.getEstado())) {
-            throw new IllegalStateException(
-                    "No se pueden registrar observaciones "
-                            + "en una orden cerrada"
-            );
-        }
+        validarOrdenAbierta(orden);
 
         if (orden.getTecnico() == null) {
             throw new IllegalStateException(
                     "La orden debe tener un técnico asignado"
+            );
+        }
+    }
+
+    private void validarOrdenAbierta(OrdenTrabajo orden) {
+        if ("CANCELADA".equals(orden.getEstado())
+                || "FINALIZADA".equals(orden.getEstado())) {
+            throw new IllegalStateException(
+                    "No se pueden modificar observaciones "
+                            + "en una orden cerrada"
             );
         }
     }

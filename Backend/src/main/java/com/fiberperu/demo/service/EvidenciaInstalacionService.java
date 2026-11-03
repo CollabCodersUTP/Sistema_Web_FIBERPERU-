@@ -353,6 +353,7 @@ public class EvidenciaInstalacionService {
     ) {
         EvidenciaInstalacion evidencia =
                 buscarEntidadPorId(idEvidencia);
+        validarOrdenParaEvidencia(evidencia.getOrden());
 
         if (!"PENDIENTE".equals(
                 evidencia.getEstadoValidacion()
@@ -510,7 +511,7 @@ public class EvidenciaInstalacionService {
         if ("CANCELADA".equals(orden.getEstado())
                 || "FINALIZADA".equals(orden.getEstado())) {
             throw new IllegalStateException(
-                    "No se pueden registrar evidencias "
+                    "No se pueden modificar evidencias "
                             + "en una orden cerrada"
             );
         }

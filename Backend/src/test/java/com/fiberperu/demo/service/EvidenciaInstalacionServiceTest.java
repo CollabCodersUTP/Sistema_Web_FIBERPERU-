@@ -240,6 +240,21 @@ class EvidenciaInstalacionServiceTest {
         verifyNoInteractions(azureBlobStorageService, historialRepository);
     }
 
+    @Test
+    void ordenFinalizadaNoPermiteValidarEvidenciaPendiente() {
+        var evidencia = evidenciaObservada("FINALIZADA");
+        evidencia.setEstadoValidacion("PENDIENTE");
+        when(evidenciaRepository.findById(3L)).thenReturn(Optional.of(evidencia));
+
+        assertThrows(IllegalStateException.class, () -> service.validar(
+                3L, ValidarEvidenciaRequest.builder()
+                        .estadoValidacion("APROBADA").build(),
+                "coordinador@fiberperu.test"));
+
+        verifyNoInteractions(usuarioRepository, coordinadorRepository,
+                historialRepository);
+    }
+
     private EvidenciaInstalacion evidencia() {
         var orden = OrdenTrabajo.builder()
                 .idOrden(6L)
