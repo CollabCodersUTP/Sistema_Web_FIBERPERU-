@@ -4,6 +4,7 @@ import com.fiberperu.demo.dto.asignacion.OrdenDispositivoRequest;
 import com.fiberperu.demo.dto.asignacion.OrdenDispositivoResponse;
 import com.fiberperu.demo.dto.asignacion.RetirarDispositivoRequest;
 import com.fiberperu.demo.entity.Dispositivo;
+import com.fiberperu.demo.entity.HistorialOrden;
 import com.fiberperu.demo.entity.OrdenDispositivo;
 import com.fiberperu.demo.entity.OrdenTrabajo;
 import com.fiberperu.demo.entity.TipoDispositivo;
@@ -11,6 +12,7 @@ import com.fiberperu.demo.entity.Tecnico;
 import com.fiberperu.demo.entity.Usuario;
 import com.fiberperu.demo.exception.RecursoNoEncontradoException;
 import com.fiberperu.demo.repository.DispositivoRepository;
+import com.fiberperu.demo.repository.HistorialOrdenRepository;
 import com.fiberperu.demo.repository.OrdenDispositivoRepository;
 import com.fiberperu.demo.repository.OrdenTrabajoRepository;
 import com.fiberperu.demo.repository.TecnicoRepository;
@@ -30,6 +32,7 @@ public class OrdenDispositivoService {
     private final OrdenDispositivoRepository ordenDispositivoRepository;
     private final OrdenTrabajoRepository ordenTrabajoRepository;
     private final DispositivoRepository dispositivoRepository;
+    private final HistorialOrdenRepository historialRepository;
     private final UsuarioRepository usuarioRepository;
     private final TecnicoRepository tecnicoRepository;
 
@@ -170,6 +173,9 @@ public class OrdenDispositivoService {
         OrdenDispositivo guardada =
                 ordenDispositivoRepository.save(asignacion);
 
+        registrarHistorial(orden, correoResponsable, "ASIGNACION_DISPOSITIVO",
+                "Dispositivo " + dispositivo.getNumeroSerie() + " asignado a la orden");
+
         return convertirAResponse(guardada);
     }
 
@@ -215,6 +221,10 @@ public class OrdenDispositivoService {
 
         OrdenDispositivo actualizada =
                 ordenDispositivoRepository.save(asignacion);
+
+        registrarHistorial(asignacion.getOrden(), correoResponsable,
+                "INSTALACION_DISPOSITIVO", "Dispositivo "
+                        + dispositivo.getNumeroSerie() + " marcado como instalado");
 
         return convertirAResponse(actualizada);
     }
@@ -266,6 +276,11 @@ public class OrdenDispositivoService {
 
         OrdenDispositivo actualizada =
                 ordenDispositivoRepository.save(asignacion);
+
+        registrarHistorial(asignacion.getOrden(), correoResponsable,
+                "RETIRO_DISPOSITIVO", "Dispositivo "
+                        + dispositivo.getNumeroSerie() + " retirado"
+                        + (motivo == null ? "" : ". Motivo: " + motivo));
 
         return convertirAResponse(actualizada);
     }
@@ -358,5 +373,16 @@ public class OrdenDispositivoService {
         }
 
         return texto.trim();
+    }
+
+    private void registrarHistorial(OrdenTrabajo orden, String correoResponsable,
+                                   String evento, String detalle) {
+        Usuario responsable = usuarioRepository.findByCorreo(correoResponsable)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Usuario autenticado no encontrado: " + correoResponsable));
+        historialRepository.save(HistorialOrden.builder()
+                .orden(orden).usuario(responsable).tipoEvento(evento)
+                .motivo(detalle.length() <= 500 ? detalle : detalle.substring(0, 500))
+                .build());
     }
 }

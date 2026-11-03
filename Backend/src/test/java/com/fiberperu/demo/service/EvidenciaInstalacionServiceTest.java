@@ -83,6 +83,9 @@ class EvidenciaInstalacionServiceTest {
                         .build()));
         when(evidenciaRepository.save(any(EvidenciaInstalacion.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        Usuario actor = Usuario.builder().idUsuario(1L).build();
+        when(usuarioRepository.findByCorreo("admin@fiberperu.test"))
+                .thenReturn(Optional.of(actor));
         var request = EvidenciaInstalacionRequest.builder()
                 .idOrden(6L)
                 .nombreArchivo("prueba.png")
@@ -90,9 +93,13 @@ class EvidenciaInstalacionServiceTest {
                 .urlArchivo("https://example.test/prueba.png")
                 .build();
 
-        var response = service.registrar(request);
+        var response = service.registrar(request, "admin@fiberperu.test");
 
         assertEquals("image/png", response.getTipoArchivo());
+        ArgumentCaptor<HistorialOrden> evento = ArgumentCaptor.forClass(HistorialOrden.class);
+        verify(historialRepository).save(evento.capture());
+        assertEquals("REGISTRO_EVIDENCIA", evento.getValue().getTipoEvento());
+        assertEquals(actor, evento.getValue().getUsuario());
     }
 
     @Test
@@ -125,7 +132,7 @@ class EvidenciaInstalacionServiceTest {
         verify(historialRepository, times(2)).save(historial.capture());
         List<HistorialOrden> eventos = historial.getAllValues();
         assertEquals("VALIDACION_EVIDENCIA", eventos.get(0).getTipoEvento());
-        assertEquals("Foto borrosa", eventos.get(0).getMotivo());
+        assertEquals("Evidencia #3: Foto borrosa", eventos.get(0).getMotivo());
         assertEquals("REENVIO_EVIDENCIA", eventos.get(1).getTipoEvento());
         assertEquals("OBSERVADA", eventos.get(1).getEstadoAnterior());
         assertEquals("PENDIENTE", eventos.get(1).getEstadoNuevo());
@@ -161,6 +168,35 @@ class EvidenciaInstalacionServiceTest {
         assertEquals("APROBADA", respuesta.getEstadoValidacion());
         assertEquals("corregida.png", respuesta.getNombreArchivo());
         assertEquals(9L, respuesta.getIdCoordinadorValidador());
+        ArgumentCaptor<HistorialOrden> historial = ArgumentCaptor.forClass(HistorialOrden.class);
+        verify(historialRepository, times(3)).save(historial.capture());
+        assertEquals("VALIDACION_EVIDENCIA", historial.getAllValues().get(2).getTipoEvento());
+        assertEquals("APROBADA", historial.getAllValues().get(2).getEstadoNuevo());
+    }
+
+    @Test
+    void reenvioNoDuplicaValidacionYaRegistrada() {
+        var evidencia = evidenciaObservada("EN_PROCESO");
+        var archivo = new MockMultipartFile("archivo", "corregida.png",
+                "image/png", new byte[]{1});
+        when(evidenciaRepository.findById(3L)).thenReturn(Optional.of(evidencia));
+        when(usuarioRepository.findByCorreo("tecnico@fiberperu.test"))
+                .thenReturn(Optional.of(Usuario.builder().idUsuario(4L).build()));
+        when(tecnicoRepository.findByUsuarioIdUsuario(4L))
+                .thenReturn(Optional.of(Tecnico.builder().idTecnico(2L).build()));
+        when(azureBlobStorageService.almacenarEvidencia(6L, archivo))
+                .thenReturn("https://example.test/corregida.png");
+        when(historialRepository.existsByOrdenIdOrdenAndTipoEventoAndFechaHora(
+                6L, "VALIDACION_EVIDENCIA", evidencia.getFechaValidacion()))
+                .thenReturn(true);
+        when(evidenciaRepository.save(any(EvidenciaInstalacion.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.reenviarArchivo(3L, archivo, null, "tecnico@fiberperu.test", false);
+
+        ArgumentCaptor<HistorialOrden> historial = ArgumentCaptor.forClass(HistorialOrden.class);
+        verify(historialRepository).save(historial.capture());
+        assertEquals("REENVIO_EVIDENCIA", historial.getValue().getTipoEvento());
     }
 
     @Test

@@ -169,7 +169,7 @@ public class EvidenciaInstalacionController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(
-                        evidenciaService.registrar(request)
+                        evidenciaService.registrar(request, authentication.getName())
                 );
     }
 

@@ -146,7 +146,8 @@ public class EvidenciaInstalacionService {
      */
     @Transactional
     public EvidenciaInstalacionResponse registrar(
-            EvidenciaInstalacionRequest request
+            EvidenciaInstalacionRequest request,
+            String correoResponsable
     ) {
         OrdenTrabajo orden = ordenTrabajoRepository
                 .findById(request.getIdOrden())
@@ -186,6 +187,15 @@ public class EvidenciaInstalacionService {
 
         EvidenciaInstalacion guardada =
                 evidenciaRepository.save(evidencia);
+
+        Usuario responsable = usuarioRepository.findByCorreo(correoResponsable)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Usuario autenticado no encontrado: " + correoResponsable));
+        historialRepository.save(HistorialOrden.builder()
+                .orden(orden).usuario(responsable)
+                .tipoEvento("REGISTRO_EVIDENCIA")
+                .motivo("Evidencia registrada: " + guardada.getNombreArchivo())
+                .build());
 
         return convertirAResponse(guardada);
     }
@@ -237,7 +247,7 @@ public class EvidenciaInstalacionService {
                 .descripcion(descripcion)
                 .build();
 
-        return registrar(request);
+        return registrar(request, correoResponsable);
     }
 
     /**
@@ -292,7 +302,10 @@ public class EvidenciaInstalacionService {
                 .almacenarEvidencia(orden.getIdOrden(), archivo);
 
         Coordinador validadorAnterior = evidencia.getCoordinadorValidador();
-        if (validadorAnterior != null) {
+        if (validadorAnterior != null && evidencia.getFechaValidacion() != null
+                && !historialRepository.existsByOrdenIdOrdenAndTipoEventoAndFechaHora(
+                        orden.getIdOrden(), "VALIDACION_EVIDENCIA",
+                        evidencia.getFechaValidacion())) {
             historialRepository.save(HistorialOrden.builder()
                     .orden(orden)
                     .usuario(validadorAnterior.getUsuario())
@@ -300,7 +313,8 @@ public class EvidenciaInstalacionService {
                     .estadoAnterior("PENDIENTE")
                     .estadoNuevo("OBSERVADA")
                     .fechaHora(evidencia.getFechaValidacion())
-                    .motivo(evidencia.getObservacionValidacion())
+                    .motivo(detalleEvidencia(idEvidencia,
+                            evidencia.getObservacionValidacion()))
                     .build());
         }
         String referenciaAnterior = "Evidencia #" + idEvidencia + ": " + urlAnterior;
@@ -413,6 +427,15 @@ public class EvidenciaInstalacionService {
         EvidenciaInstalacion actualizada =
                 evidenciaRepository.save(evidencia);
 
+        historialRepository.save(HistorialOrden.builder()
+                .orden(evidencia.getOrden()).usuario(usuario)
+                .tipoEvento("VALIDACION_EVIDENCIA")
+                .estadoAnterior("PENDIENTE").estadoNuevo(estadoValidacion)
+                .fechaHora(evidencia.getFechaValidacion())
+                .motivo(detalleEvidencia(idEvidencia,
+                        observacion == null ? estadoValidacion : observacion))
+                .build());
+
         return convertirAResponse(actualizada);
     }
 
@@ -507,5 +530,11 @@ public class EvidenciaInstalacionService {
         }
 
         return texto.trim();
+    }
+
+    private String detalleEvidencia(Long idEvidencia, String detalle) {
+        String texto = "Evidencia #" + idEvidencia + ": "
+                + (detalle == null ? "observada" : detalle);
+        return texto.length() <= 500 ? texto : texto.substring(0, 500);
     }
 }
