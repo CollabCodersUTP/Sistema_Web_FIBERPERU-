@@ -72,6 +72,8 @@ La base de datos debe tener creado el esquema de [`database/01_schema.sql`](data
 
 Para activar los avisos de asignación y reprogramación al técnico (RF-22) en una base existente, ejecutar [`database/05_notificaciones_tecnico.sql`](database/05_notificaciones_tecnico.sql) **antes** de publicar el nuevo backend. El script crea la tabla de avisos y concede acceso al rol de la aplicación en Azure. Los técnicos consultan y marcan sus propios avisos desde la campana del encabezado.
 
+Para registrar la creación y evaluación de nuevas solicitudes con fecha, hora y usuario, ejecutar [`database/06_historial_solicitud.sql`](database/06_historial_solicitud.sql) en la base existente **antes** de publicar el backend de auditoría. Los registros anteriores permanecen sin eventos retrospectivos porque no se puede atribuir con certeza su autor.
+
 Los pasos para preparar la base de datos, ejecutar ambos módulos y comprobarlos localmente están en la [guía técnica de la V1](documentacion/GUIA_TECNICA_V1.md).
 
 La integración continua de GitHub Actions compila y prueba `Backend/pom.xml` con Java 21 y una base PostgreSQL temporal. El flujo de despliegue a `fiberperu-api-dev` se ejecuta manualmente desde **Actions → Azure Deployment CD → Run workflow**, una vez integrado en la rama predeterminada. Para iniciar sesión en Azure utiliza OIDC y los secretos del repositorio `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` y `AZURE_SUBSCRIPTION_ID`.
@@ -160,9 +162,9 @@ A continuación se detalla la matriz de requerimientos funcionales del sistema c
 | **RF-16** | Adjuntar evidencias multimedia de la instalación (imágenes JPG, PNG y documentos PDF). | Técnico | `EvidenciaInstalacionController` | ✅ Implementado |
 | **RF-17** | Revisar evidencias por parte del coordinador con capacidad de aprobar u observar para subsanación. | Coordinador | `EvidenciaInstalacionService` | ✅ Implementado |
 | **RF-18** | Cerrar definitivamente una orden de trabajo cuando equipos y evidencias estén conformes. | Coordinador | `OrdenTrabajoService.validarCierreConforme` | ✅ Implementado |
-| **RF-19** | Consultar historial cronológico y trazabilidad completa de cambios de estado y acciones de la orden. | Todos con permisos | `HistorialOrdenController` | ✅ Implementado |
+| **RF-19** | Consultar el ciclo de solicitudes y órdenes y sus eventos registrados. | Administrador | Auditoría de órdenes y solicitudes en Historial y trazabilidad | 🟡 Auditoría de solicitudes preparada; falta verificarla en Azure |
 | **RF-20** | Buscar y filtrar órdenes por cliente, técnico, estado actual y rango de fechas. | Coordinador / Administrador | `OrdenTrabajoRepository` | ✅ Implementado |
-| **RF-21** | Generar reportes consolidados sobre instalaciones programadas, ejecutadas y cerradas. | Administrador | `ReporteService` / Dashboard | 🟡 En integración |
+| **RF-21** | Exportar el reporte consolidado de órdenes según los filtros aplicados. | Administrador | Excel y CSV desde Órdenes | ✅ Comprobado en la aplicación publicada |
 | **RF-22** | Generar notificaciones / alertas al técnico ante asignación o reprogramación de orden. | Sistema | Servicio de avisos y campana del técnico | ✅ Comprobado en Azure con asignación y reprogramación |
 | **RF-23** | Consultar el estado de avance de solicitudes e instalaciones por parte del cliente mediante ticket. | Cliente | `SeguimientoPublicoController` | ✅ Implementado |
 
@@ -227,7 +229,7 @@ stateDiagram-v2
 | **RN-12** | Validación | Si las evidencias presentan observaciones o inconsistencias, la orden debe regresar al técnico para su subsanación antes del cierre. | Transición a estado `OBSERVADA` con registro del comentario de subsanación requerido. |
 | **RN-13** | Reprogramación | Toda reprogramación exige el registro de la nueva fecha, el motivo justificado del cambio y el usuario responsable. | `OrdenTrabajoService.programar`: exige parámetro `motivo` y lo registra en la orden y en el historial. |
 | **RN-14** | Trazabilidad | Las órdenes cerradas (`FINALIZADA` o `CANCELADA`) no podrán eliminarse ni modificarse directamente. | Bloqueo en `cambiarEstado` y operaciones de edición si la orden se encuentra cerrada. |
-| **RN-15** | Auditoría | Las acciones relevantes realizadas sobre solicitudes y órdenes deberán registrar de forma automática la fecha, hora y el usuario responsable. | Registro automático en la tabla `historial_orden` cada vez que ocurre una asignación, reprogramación o cambio de estado. |
+| **RN-15** | Auditoría | Las acciones relevantes realizadas sobre solicitudes y órdenes deberán registrar de forma automática la fecha, hora y el usuario responsable. | `historial_orden` registra eventos de órdenes; `historial_solicitud` registra la creación y evaluación de solicitudes nuevas después de aplicar la migración. |
 | **RN-16** | Seguridad | Cada usuario solo podrá acceder a las funciones y a la información estrictamente autorizadas para su rol (**Principio de mínimo privilegio**). | Configurado en `SecurityConfig` mediante anotaciones `@PreAuthorize` y reglas `requestMatchers`. |
 
 ---

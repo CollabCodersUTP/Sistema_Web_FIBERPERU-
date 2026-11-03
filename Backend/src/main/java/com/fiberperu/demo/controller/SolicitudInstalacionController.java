@@ -113,10 +113,11 @@ public class SolicitudInstalacionController {
     evaluar(
             @PathVariable Long id,
             @Valid
-            @RequestBody EvaluarSolicitudRequest request
+            @RequestBody EvaluarSolicitudRequest request,
+            Authentication authentication
     ) {
         return ResponseEntity.ok(
-                solicitudService.evaluar(id, request)
+                solicitudService.evaluar(id, request, authentication.getName())
         );
     }
 }

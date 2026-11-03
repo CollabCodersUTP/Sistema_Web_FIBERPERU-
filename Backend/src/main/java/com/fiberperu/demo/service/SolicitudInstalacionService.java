@@ -4,10 +4,12 @@ import com.fiberperu.demo.dto.solicitud.EvaluarSolicitudRequest;
 import com.fiberperu.demo.dto.solicitud.SolicitudInstalacionRequest;
 import com.fiberperu.demo.dto.solicitud.SolicitudInstalacionResponse;
 import com.fiberperu.demo.entity.Cliente;
+import com.fiberperu.demo.entity.HistorialSolicitud;
 import com.fiberperu.demo.entity.SolicitudInstalacion;
 import com.fiberperu.demo.entity.Usuario;
 import com.fiberperu.demo.exception.RecursoNoEncontradoException;
 import com.fiberperu.demo.repository.ClienteRepository;
+import com.fiberperu.demo.repository.HistorialSolicitudRepository;
 import com.fiberperu.demo.repository.SolicitudInstalacionRepository;
 import com.fiberperu.demo.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class SolicitudInstalacionService {
     private final ClienteRepository clienteRepository;
     private final UsuarioRepository usuarioRepository;
     private final CodigoSolicitudService codigoSolicitudService;
+    private final HistorialSolicitudRepository historialSolicitudRepository;
 
     public List<SolicitudInstalacionResponse> listarTodas() {
         return solicitudRepository.findAll()
@@ -101,13 +104,10 @@ public class SolicitudInstalacionService {
             String correoResponsable,
             boolean esCliente
     ) {
+        Usuario responsable = buscarUsuario(correoResponsable);
         Cliente cliente;
         if (esCliente) {
-            Usuario usuario = usuarioRepository.findByCorreo(correoResponsable)
-                    .orElseThrow(() -> new RecursoNoEncontradoException(
-                            "Usuario autenticado no encontrado: " + correoResponsable
-                    ));
-            cliente = clienteRepository.findByUsuarioIdUsuario(usuario.getIdUsuario())
+            cliente = clienteRepository.findByUsuarioIdUsuario(responsable.getIdUsuario())
                     .orElseThrow(() -> new IllegalStateException(
                             "El usuario autenticado no posee un perfil de cliente"
                     ));
@@ -150,13 +150,17 @@ public class SolicitudInstalacionService {
         SolicitudInstalacion guardada =
                 solicitudRepository.save(solicitud);
 
+        registrarHistorial(guardada, responsable, "CREACION", null,
+                guardada.getEstado(), "Registro de solicitud");
+
         return convertirAResponse(guardada);
     }
 
     @Transactional
     public SolicitudInstalacionResponse evaluar(
             Long id,
-            EvaluarSolicitudRequest request
+            EvaluarSolicitudRequest request,
+            String correoResponsable
     ) {
         SolicitudInstalacion solicitud =
                 buscarEntidadPorId(id);
@@ -178,6 +182,9 @@ public class SolicitudInstalacionService {
             );
         }
 
+        Usuario responsable = buscarUsuario(correoResponsable);
+        String estadoAnterior = solicitud.getEstado();
+
         if (solicitud.getResultadoEvaluacion() == null
                 && solicitud.getFechaEvaluacion() == null) {
             solicitud.setFechaEvaluacion(
@@ -194,7 +201,37 @@ public class SolicitudInstalacionService {
         SolicitudInstalacion actualizada =
                 solicitudRepository.save(solicitud);
 
+        boolean cambioDeEstado = !estadoAnterior.equals(resultado);
+        registrarHistorial(actualizada, responsable, "EVALUACION",
+                cambioDeEstado ? estadoAnterior : null,
+                cambioDeEstado ? resultado : null,
+                solicitud.getObservacionEvaluacion());
+
         return convertirAResponse(actualizada);
+    }
+
+    private Usuario buscarUsuario(String correo) {
+        return usuarioRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Usuario autenticado no encontrado: " + correo));
+    }
+
+    private void registrarHistorial(
+            SolicitudInstalacion solicitud,
+            Usuario usuario,
+            String tipoEvento,
+            String estadoAnterior,
+            String estadoNuevo,
+            String motivo
+    ) {
+        historialSolicitudRepository.save(HistorialSolicitud.builder()
+                .solicitud(solicitud)
+                .usuario(usuario)
+                .tipoEvento(tipoEvento)
+                .estadoAnterior(estadoAnterior)
+                .estadoNuevo(estadoNuevo)
+                .motivo(motivo)
+                .build());
     }
 
     private SolicitudInstalacionResponse convertirAResponse(
