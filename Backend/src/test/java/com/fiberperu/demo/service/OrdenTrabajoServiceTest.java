@@ -175,6 +175,7 @@ class OrdenTrabajoServiceTest {
     @Test
     void guardaMotivoCuandoReprogramaUnaOrden() {
         OrdenTrabajo orden = ordenEnProceso();
+        orden.setEstado("PROGRAMADA");
         orden.setFechaProgramada(LocalDate.of(2026, 10, 26));
         orden.setHoraProgramada(LocalTime.of(9, 0));
         when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
@@ -192,7 +193,9 @@ class OrdenTrabajoServiceTest {
         verify(ordenRepository).save(orden);
         verify(historialRepository).save(argThat(historial ->
                 "REPROGRAMACION".equals(historial.getTipoEvento())
-                        && "Cliente solicitó otra fecha".equals(historial.getMotivo())));
+                        && "Cliente solicitó otra fecha".equals(historial.getMotivo())
+                        && historial.getEstadoAnterior() == null
+                        && historial.getEstadoNuevo() == null));
         verify(notificacionService).registrarReprogramacion(orden);
     }
 

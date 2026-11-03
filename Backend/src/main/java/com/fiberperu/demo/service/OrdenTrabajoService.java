@@ -476,12 +476,13 @@ public class OrdenTrabajoService {
             String estadoNuevo,
             String motivo
     ) {
+        boolean cambioDeEstado = !Objects.equals(estadoAnterior, estadoNuevo);
         HistorialOrden historial = HistorialOrden.builder()
                 .orden(orden)
                 .usuario(usuario)
                 .tipoEvento(tipoEvento)
-                .estadoAnterior(estadoAnterior)
-                .estadoNuevo(estadoNuevo)
+                .estadoAnterior(cambioDeEstado ? estadoAnterior : null)
+                .estadoNuevo(cambioDeEstado ? estadoNuevo : null)
                 .motivo(motivo)
                 .build();
 
