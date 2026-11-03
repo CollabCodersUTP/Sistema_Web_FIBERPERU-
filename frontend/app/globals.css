@@ -29,6 +29,14 @@
 .export-options summary { cursor:pointer; }
 .export-options>div { position:absolute;right:0;top:calc(100% + 8px);z-index:5;width:250px;max-width:calc(100vw - 40px);padding:14px;border:1px solid var(--line);border-radius:8px;background:white;box-shadow:0 8px 24px #17365d20; }
 .export-options small { display:block;margin-top:10px;color:var(--muted);line-height:1.5; }
+.avisos-tecnico { margin-bottom:16px; }
+.avisos-lista { display:grid;gap:8px;max-height:280px;overflow-y:auto; }
+.aviso-item { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:#f8fafc; }
+.aviso-item.sin-leer { border-color:#a5d1f4;background:#edf6ff; }
+.aviso-item>div { display:grid;gap:4px; }
+.aviso-item b { font-size:12px; }
+.aviso-item span { font-size:12px; }
+.aviso-item small { color:var(--muted);font-size:10px; }
 @media (max-width:850px) { .filter-grid { grid-template-columns:1fr 1fr; } }
 @media (max-width:570px) { .filter-grid,.detail-summary { grid-template-columns:1fr; } }
 @media (max-width:850px) { .sidebar { width:62px;padding:18px 8px; }.brand { padding:0 5px 22px; }.brand strong { font-size:0; }.brand strong:before { content:'FP';font-size:15px; }.brand span,.nav-item { font-size:0; }.nav-item { justify-content:center;padding:12px; }.nav-item i { font-size:15px; }.sidebar-footer { font-size:0; }.topbar,.content { padding-left:18px;padding-right:18px; }.metrics { grid-template-columns:repeat(2,1fr); }.dashboard-grid { grid-template-columns:1fr; } } @media (max-width:570px) { .topbar { padding:0 14px; }.topbar>span { display:none; }.profile { margin-left:auto; }.profile>div { display:none; }.content { padding:20px 14px; }.page-title,.client-hero { align-items:stretch;flex-direction:column; }.metrics,.welcome-cards,.tracking-result dl { grid-template-columns:1fr; }.hero-panel { padding:32px 25px; }.hero-panel h1 { font-size:27px; }.form-grid.two { grid-template-columns:1fr; }.form-grid .full { grid-column:auto; }.track-panel form { display:grid; }.primary { width:100%; }.page-title .primary { width:auto; }.hero-actions .primary,.hero-actions .secondary { width:auto; } }

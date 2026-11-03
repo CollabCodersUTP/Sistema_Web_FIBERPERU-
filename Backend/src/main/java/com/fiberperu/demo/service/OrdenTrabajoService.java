@@ -38,6 +38,7 @@ public class OrdenTrabajoService {
     private final OrdenDispositivoRepository ordenDispositivoRepository;
     private final EvidenciaInstalacionRepository evidenciaRepository;
     private final ObservacionServicioRepository observacionRepository;
+    private final NotificacionTecnicoService notificacionService;
 
     public List<OrdenTrabajoResponse> listarTodas() {
         return ordenRepository.findAll()
@@ -227,6 +228,8 @@ public class OrdenTrabajoService {
                 buscarUsuarioPorCorreo(correoResponsable);
 
         String estadoAnterior = orden.getEstado();
+        Long idTecnicoAnterior = orden.getTecnico() == null
+                ? null : orden.getTecnico().getIdTecnico();
 
         orden.setTecnico(tecnico);
         orden.setEstado("ASIGNADA");
@@ -242,6 +245,9 @@ public class OrdenTrabajoService {
                 "ASIGNADA",
                 "Asignación de técnico a la orden"
         );
+        if (!Objects.equals(idTecnicoAnterior, tecnico.getIdTecnico())) {
+            notificacionService.registrarAsignacion(actualizada);
+        }
 
         return convertirAResponse(actualizada);
     }
@@ -313,6 +319,9 @@ public class OrdenTrabajoService {
                         ? motivoReprogramacion
                         : "Programación de la instalación"
         );
+        if (cambioHorario && actualizada.getTecnico() != null) {
+            notificacionService.registrarReprogramacion(actualizada);
+        }
 
         return convertirAResponse(actualizada);
     }

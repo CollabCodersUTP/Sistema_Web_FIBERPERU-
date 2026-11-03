@@ -3,6 +3,7 @@
 BEGIN;
 
 -- Modelo definitivo
+DROP TABLE IF EXISTS notificacion_tecnico CASCADE;
 DROP TABLE IF EXISTS historial_orden CASCADE;
 DROP TABLE IF EXISTS observacion_servicio CASCADE;
 DROP TABLE IF EXISTS evidencia_instalacion CASCADE;
@@ -148,6 +149,15 @@ CREATE TABLE historial_orden (
  fecha_hora TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, motivo VARCHAR(500),
  CHECK ((estado_anterior IS NULL AND estado_nuevo IS NULL) OR estado_anterior IS DISTINCT FROM estado_nuevo)
 );
+CREATE TABLE notificacion_tecnico (
+ id_notificacion BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ id_usuario BIGINT NOT NULL REFERENCES usuario(id_usuario) ON DELETE CASCADE,
+ id_orden BIGINT NOT NULL REFERENCES orden_trabajo(id_orden) ON DELETE CASCADE,
+ tipo_evento VARCHAR(30) NOT NULL CHECK (tipo_evento IN ('ASIGNACION', 'REPROGRAMACION')),
+ mensaje VARCHAR(250) NOT NULL,
+ fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ fecha_lectura TIMESTAMP
+);
 CREATE INDEX idx_usuario_rol ON usuario(id_rol);
 CREATE INDEX idx_solicitud_cliente ON solicitud_instalacion(id_cliente);
 CREATE INDEX idx_solicitud_estado ON solicitud_instalacion(estado);
@@ -159,4 +169,5 @@ CREATE INDEX idx_orden_dispositivo_orden ON orden_dispositivo(id_orden);
 CREATE INDEX idx_evidencia_orden ON evidencia_instalacion(id_orden);
 CREATE INDEX idx_observacion_orden ON observacion_servicio(id_orden);
 CREATE INDEX idx_historial_orden_fecha ON historial_orden(id_orden,fecha_hora);
+CREATE INDEX idx_notificacion_tecnico_usuario ON notificacion_tecnico(id_usuario,fecha_creacion DESC);
 COMMIT;

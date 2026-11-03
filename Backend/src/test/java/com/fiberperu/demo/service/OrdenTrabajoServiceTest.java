@@ -56,6 +56,7 @@ class OrdenTrabajoServiceTest {
     @Mock private OrdenDispositivoRepository ordenDispositivoRepository;
     @Mock private EvidenciaInstalacionRepository evidenciaRepository;
     @Mock private ObservacionServicioRepository observacionRepository;
+    @Mock private NotificacionTecnicoService notificacionService;
     @InjectMocks private OrdenTrabajoService service;
 
     @ParameterizedTest
@@ -192,6 +193,7 @@ class OrdenTrabajoServiceTest {
         verify(historialRepository).save(argThat(historial ->
                 "REPROGRAMACION".equals(historial.getTipoEvento())
                         && "Cliente solicitó otra fecha".equals(historial.getMotivo())));
+        verify(notificacionService).registrarReprogramacion(orden);
     }
 
     @Test
@@ -212,6 +214,28 @@ class OrdenTrabajoServiceTest {
         assertNull(respuesta.getMotivoReprogramacion());
         verify(historialRepository).save(argThat(historial ->
                 "Programación de la instalación".equals(historial.getMotivo())));
+        verifyNoInteractions(notificacionService);
+    }
+
+    @Test
+    void avisaAlTecnicoCuandoRecibeUnaOrden() {
+        OrdenTrabajo orden = ordenEnProceso();
+        orden.setEstado("REGISTRADA");
+        orden.setTecnico(null);
+        Tecnico tecnico = Tecnico.builder().idTecnico(4L)
+                .usuario(Usuario.builder().idUsuario(8L).build())
+                .estado(true).disponibilidad(true).build();
+        when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
+        when(tecnicoRepository.findById(4L)).thenReturn(Optional.of(tecnico));
+        when(usuarioRepository.findByCorreo("coordinador@fiberperu.test"))
+                .thenReturn(Optional.of(Usuario.builder().idUsuario(3L).build()));
+        when(ordenRepository.save(orden)).thenReturn(orden);
+
+        service.asignarTecnico(7L,
+                AsignarTecnicoRequest.builder().idTecnico(4L).build(),
+                "coordinador@fiberperu.test");
+
+        verify(notificacionService).registrarAsignacion(orden);
     }
 
     @ParameterizedTest

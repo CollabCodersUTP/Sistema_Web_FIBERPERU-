@@ -70,6 +70,8 @@ El frontend usa `NEXT_PUBLIC_API_BASE_URL`, incluida en [`frontend/.env.example`
 
 La base de datos debe tener creado el esquema de [`database/01_schema.sql`](database/01_schema.sql) antes de iniciar el backend, ya que Hibernate está configurado con `ddl-auto: validate`. Antes de publicar la generación automática de códigos de solicitud, ejecutar [`database/04_codigos_solicitud.sql`](database/04_codigos_solicitud.sql) sobre la base ya existente; no volver a ejecutar `01_schema.sql` en Azure.
 
+Para activar los avisos de asignación y reprogramación al técnico (RF-22) en una base existente, ejecutar [`database/05_notificaciones_tecnico.sql`](database/05_notificaciones_tecnico.sql) **antes** de publicar el nuevo backend. El script crea la tabla de avisos y concede acceso al rol de la aplicación en Azure. Los técnicos consultan y marcan sus propios avisos desde el Dashboard.
+
 Los pasos para preparar la base de datos, ejecutar ambos módulos y comprobarlos localmente están en la [guía técnica de la V1](documentacion/GUIA_TECNICA_V1.md).
 
 La integración continua de GitHub Actions compila y prueba `Backend/pom.xml` con Java 21 y una base PostgreSQL temporal. El flujo de despliegue a `fiberperu-api-dev` se ejecuta manualmente desde **Actions → Azure Deployment CD → Run workflow**, una vez integrado en la rama predeterminada. Para iniciar sesión en Azure utiliza OIDC y los secretos del repositorio `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` y `AZURE_SUBSCRIPTION_ID`.
@@ -161,7 +163,7 @@ A continuación se detalla la matriz de requerimientos funcionales del sistema c
 | **RF-19** | Consultar historial cronológico y trazabilidad completa de cambios de estado y acciones de la orden. | Todos con permisos | `HistorialOrdenController` | ✅ Implementado |
 | **RF-20** | Buscar y filtrar órdenes por cliente, técnico, estado actual y rango de fechas. | Coordinador / Administrador | `OrdenTrabajoRepository` | ✅ Implementado |
 | **RF-21** | Generar reportes consolidados sobre instalaciones programadas, ejecutadas y cerradas. | Administrador | `ReporteService` / Dashboard | 🟡 En integración |
-| **RF-22** | Generar notificaciones / alertas al técnico ante asignación o reprogramación de orden. | Sistema | Eventos de dominio / Servicio | 🟡 En integración |
+| **RF-22** | Generar notificaciones / alertas al técnico ante asignación o reprogramación de orden. | Sistema | Servicio de avisos y Dashboard del técnico | 🟡 Implementado localmente; pendiente de comprobación en Azure |
 | **RF-23** | Consultar el estado de avance de solicitudes e instalaciones por parte del cliente mediante ticket. | Cliente | `SeguimientoPublicoController` | ✅ Implementado |
 
 ---
