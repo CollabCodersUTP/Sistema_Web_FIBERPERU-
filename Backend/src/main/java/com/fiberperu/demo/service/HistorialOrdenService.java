@@ -1,12 +1,14 @@
 package com.fiberperu.demo.service;
 
 import com.fiberperu.demo.dto.historial.HistorialOrdenResponse;
+import com.fiberperu.demo.dto.historial.RegistrarRectificacionRequest;
 import com.fiberperu.demo.entity.HistorialOrden;
 import com.fiberperu.demo.entity.OrdenTrabajo;
 import com.fiberperu.demo.entity.Usuario;
 import com.fiberperu.demo.exception.RecursoNoEncontradoException;
 import com.fiberperu.demo.repository.HistorialOrdenRepository;
 import com.fiberperu.demo.repository.OrdenTrabajoRepository;
+import com.fiberperu.demo.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,39 @@ public class HistorialOrdenService {
 
     private final HistorialOrdenRepository historialRepository;
     private final OrdenTrabajoRepository ordenTrabajoRepository;
+    private final UsuarioRepository usuarioRepository;
+
+    /** Registra una rectificación sin alterar los datos de una orden cerrada. */
+    @Transactional
+    public HistorialOrdenResponse registrarRectificacion(
+            Long idOrden, RegistrarRectificacionRequest request, String correoResponsable
+    ) {
+        OrdenTrabajo orden = ordenTrabajoRepository.findById(idOrden)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Orden no encontrada con id: " + idOrden));
+        if (!"FINALIZADA".equals(orden.getEstado())
+                && !"CANCELADA".equals(orden.getEstado())) {
+            throw new IllegalStateException(
+                    "Solo se pueden rectificar registros de órdenes cerradas");
+        }
+
+        String detalle = request.getDetalle() == null ? "" : request.getDetalle().trim();
+        if (detalle.isEmpty() || detalle.length() > 500) {
+            throw new IllegalArgumentException(
+                    "El detalle de la rectificación debe tener entre 1 y 500 caracteres");
+        }
+
+        Usuario responsable = usuarioRepository.findByCorreo(correoResponsable)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Usuario autenticado no encontrado: " + correoResponsable));
+        HistorialOrden registro = historialRepository.save(HistorialOrden.builder()
+                .orden(orden)
+                .usuario(responsable)
+                .tipoEvento("RECTIFICACION_POSTCIERRE")
+                .motivo(detalle)
+                .build());
+        return convertirAResponse(registro);
+    }
 
     /**
      * Lista todos los eventos históricos.

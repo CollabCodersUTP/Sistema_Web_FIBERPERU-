@@ -1,9 +1,12 @@
 package com.fiberperu.demo.controller;
 
 import com.fiberperu.demo.dto.historial.HistorialOrdenResponse;
+import com.fiberperu.demo.dto.historial.RegistrarRectificacionRequest;
 import com.fiberperu.demo.service.AccesoRecursosService;
 import com.fiberperu.demo.service.HistorialOrdenService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -18,6 +21,18 @@ public class HistorialOrdenController {
 
     private final HistorialOrdenService historialOrdenService;
     private final AccesoRecursosService accesoRecursosService;
+
+    @PostMapping("/orden/{idOrden}/rectificaciones")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'COORDINADOR')")
+    public ResponseEntity<HistorialOrdenResponse> registrarRectificacion(
+            @PathVariable Long idOrden,
+            @Valid @RequestBody RegistrarRectificacionRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                historialOrdenService.registrarRectificacion(
+                        idOrden, request, authentication.getName()));
+    }
 
     /**
      * Lista todos los eventos históricos.
