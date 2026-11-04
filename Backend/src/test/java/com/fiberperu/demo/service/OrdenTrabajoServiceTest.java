@@ -78,10 +78,11 @@ class OrdenTrabajoServiceTest {
                 observacionRepository);
     }
 
-    @Test
-    void permiteIniciarOrdenProgramadaAntesDelCierre() {
+    @ParameterizedTest
+    @ValueSource(strings = {"PROGRAMADA", "ASIGNADA"})
+    void permiteIniciarOrdenConTecnicoYHorarioEnCualquierOrden(String estadoActual) {
         OrdenTrabajo orden = ordenEnProceso();
-        orden.setEstado("PROGRAMADA");
+        orden.setEstado(estadoActual);
         orden.setFechaProgramada(LocalDate.of(2026, 10, 26));
         orden.setHoraProgramada(LocalTime.of(9, 0));
         when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
@@ -95,6 +96,62 @@ class OrdenTrabajoServiceTest {
 
         assertEquals("EN_PROCESO", respuesta.getEstado());
         assertNotNull(orden.getFechaInicio());
+    }
+
+    @Test
+    void rechazaSaltoDeRegistradaAEnProcesoAunqueTengaDatos() {
+        OrdenTrabajo orden = ordenEnProceso();
+        orden.setEstado("REGISTRADA");
+        orden.setFechaProgramada(LocalDate.of(2026, 10, 26));
+        orden.setHoraProgramada(LocalTime.of(9, 0));
+        when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> service.cambiarEstado(7L,
+                        CambiarEstadoOrdenRequest.builder()
+                                .estadoNuevo("EN_PROCESO").build(),
+                        "tecnico@fiberperu.test", false));
+
+        assertEquals("La orden debe estar asignada o programada antes de iniciar",
+                error.getMessage());
+        assertEquals("REGISTRADA", orden.getEstado());
+        verify(ordenRepository, never()).save(any());
+    }
+
+    @Test
+    void rechazaCambiarManualmenteAProgramadaSinRegistrarHorario() {
+        OrdenTrabajo orden = ordenEnProceso();
+        orden.setEstado("REGISTRADA");
+        when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> service.cambiarEstado(7L,
+                        CambiarEstadoOrdenRequest.builder()
+                                .estadoNuevo("PROGRAMADA").build(),
+                        "coordinador@fiberperu.test", true));
+
+        assertEquals("La asignación y la programación deben realizarse en sus operaciones correspondientes",
+                error.getMessage());
+        assertEquals("REGISTRADA", orden.getEstado());
+        verify(ordenRepository, never()).save(any());
+    }
+
+    @Test
+    void rechazaObservarOrdenQueAunNoInicio() {
+        OrdenTrabajo orden = ordenEnProceso();
+        orden.setEstado("ASIGNADA");
+        when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> service.cambiarEstado(7L,
+                        CambiarEstadoOrdenRequest.builder()
+                                .estadoNuevo("OBSERVADA").build(),
+                        "coordinador@fiberperu.test", true));
+
+        assertEquals("Solo una orden en proceso puede pasar a observada",
+                error.getMessage());
+        assertEquals("ASIGNADA", orden.getEstado());
+        verify(ordenRepository, never()).save(any());
     }
 
     @Test
@@ -218,6 +275,64 @@ class OrdenTrabajoServiceTest {
         verify(historialRepository).save(argThat(historial ->
                 "Programación de la instalación".equals(historial.getMotivo())));
         verifyNoInteractions(notificacionService);
+    }
+
+    @Test
+    void permiteProgramarYDespuesAsignarTecnico() {
+        OrdenTrabajo orden = ordenEnProceso();
+        orden.setEstado("REGISTRADA");
+        orden.setTecnico(null);
+        Tecnico tecnico = Tecnico.builder().idTecnico(4L)
+                .usuario(Usuario.builder().idUsuario(8L).build())
+                .estado(true).disponibilidad(true).build();
+        when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
+        when(tecnicoRepository.findById(4L)).thenReturn(Optional.of(tecnico));
+        when(usuarioRepository.findByCorreo("coordinador@fiberperu.test"))
+                .thenReturn(Optional.of(Usuario.builder().idUsuario(3L).build()));
+        when(ordenRepository.save(orden)).thenReturn(orden);
+
+        service.programar(7L, ProgramarOrdenRequest.builder()
+                .fechaProgramada(LocalDate.of(2026, 10, 27))
+                .horaProgramada(LocalTime.of(10, 0)).build(),
+                "coordinador@fiberperu.test");
+        assertEquals("PROGRAMADA", orden.getEstado());
+        assertNull(orden.getTecnico());
+
+        service.asignarTecnico(7L,
+                AsignarTecnicoRequest.builder().idTecnico(4L).build(),
+                "coordinador@fiberperu.test");
+        assertEquals("ASIGNADA", orden.getEstado());
+        assertEquals(4L, orden.getTecnico().getIdTecnico());
+        assertEquals(LocalDate.of(2026, 10, 27), orden.getFechaProgramada());
+    }
+
+    @Test
+    void permiteAsignarTecnicoYDespuesProgramar() {
+        OrdenTrabajo orden = ordenEnProceso();
+        orden.setEstado("REGISTRADA");
+        orden.setTecnico(null);
+        Tecnico tecnico = Tecnico.builder().idTecnico(4L)
+                .usuario(Usuario.builder().idUsuario(8L).build())
+                .estado(true).disponibilidad(true).build();
+        when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
+        when(tecnicoRepository.findById(4L)).thenReturn(Optional.of(tecnico));
+        when(usuarioRepository.findByCorreo("coordinador@fiberperu.test"))
+                .thenReturn(Optional.of(Usuario.builder().idUsuario(3L).build()));
+        when(ordenRepository.save(orden)).thenReturn(orden);
+
+        service.asignarTecnico(7L,
+                AsignarTecnicoRequest.builder().idTecnico(4L).build(),
+                "coordinador@fiberperu.test");
+        assertEquals("ASIGNADA", orden.getEstado());
+        assertEquals(4L, orden.getTecnico().getIdTecnico());
+
+        service.programar(7L, ProgramarOrdenRequest.builder()
+                .fechaProgramada(LocalDate.of(2026, 10, 27))
+                .horaProgramada(LocalTime.of(10, 0)).build(),
+                "coordinador@fiberperu.test");
+        assertEquals("PROGRAMADA", orden.getEstado());
+        assertEquals(4L, orden.getTecnico().getIdTecnico());
+        assertEquals(LocalDate.of(2026, 10, 27), orden.getFechaProgramada());
     }
 
     @Test

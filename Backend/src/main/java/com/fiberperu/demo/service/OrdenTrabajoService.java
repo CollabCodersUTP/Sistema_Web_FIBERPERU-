@@ -359,6 +359,30 @@ public class OrdenTrabajoService {
             );
         }
 
+        // La asignación y la programación se registran por sus rutas propias.
+        if ("REGISTRADA".equals(estadoNuevo)
+                || "ASIGNADA".equals(estadoNuevo)
+                || "PROGRAMADA".equals(estadoNuevo)) {
+            throw new IllegalStateException(
+                    "La asignación y la programación deben realizarse en sus operaciones correspondientes"
+            );
+        }
+
+        if ("EN_PROCESO".equals(estadoNuevo)
+                && !Set.of("ASIGNADA", "PROGRAMADA", "OBSERVADA")
+                        .contains(orden.getEstado())) {
+            throw new IllegalStateException(
+                    "La orden debe estar asignada o programada antes de iniciar"
+            );
+        }
+
+        if ("OBSERVADA".equals(estadoNuevo)
+                && !"EN_PROCESO".equals(orden.getEstado())) {
+            throw new IllegalStateException(
+                    "Solo una orden en proceso puede pasar a observada"
+            );
+        }
+
         if ("EN_PROCESO".equals(estadoNuevo)
                 && orden.getTecnico() == null) {
             throw new IllegalStateException(
