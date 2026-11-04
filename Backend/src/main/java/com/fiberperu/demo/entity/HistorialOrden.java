@@ -1,5 +1,7 @@
 package com.fiberperu.demo.entity;
 
+import com.fiberperu.demo.util.HoraPeru;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -45,7 +47,7 @@ public class HistorialOrden {
     @PrePersist
     protected void antesDeCrear() {
         if (fechaHora == null) {
-            fechaHora = LocalDateTime.now();
+            fechaHora = HoraPeru.ahora();
         }
     }
 }

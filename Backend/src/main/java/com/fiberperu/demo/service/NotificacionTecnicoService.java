@@ -1,5 +1,7 @@
 package com.fiberperu.demo.service;
 
+import com.fiberperu.demo.util.HoraPeru;
+
 import com.fiberperu.demo.dto.notificacion.NotificacionTecnicoResponse;
 import com.fiberperu.demo.entity.NotificacionTecnico;
 import com.fiberperu.demo.entity.OrdenTrabajo;
@@ -12,7 +14,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -41,7 +42,7 @@ public class NotificacionTecnicoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Aviso no encontrado"));
         if (notificacion.getFechaLectura() == null) {
-            notificacion.setFechaLectura(LocalDateTime.now());
+            notificacion.setFechaLectura(HoraPeru.ahora());
             notificacionRepository.save(notificacion);
         }
         return convertir(notificacion);

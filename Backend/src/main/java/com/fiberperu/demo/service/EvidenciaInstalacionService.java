@@ -1,5 +1,7 @@
 package com.fiberperu.demo.service;
 
+import com.fiberperu.demo.util.HoraPeru;
+
 import com.fiberperu.demo.dto.evidencia.EvidenciaInstalacionRequest;
 import com.fiberperu.demo.dto.evidencia.EvidenciaInstalacionResponse;
 import com.fiberperu.demo.dto.evidencia.ValidarEvidenciaRequest;
@@ -22,7 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -422,7 +423,7 @@ public class EvidenciaInstalacionService {
 
         evidencia.setCoordinadorValidador(coordinador);
         evidencia.setEstadoValidacion(estadoValidacion);
-        evidencia.setFechaValidacion(LocalDateTime.now());
+        evidencia.setFechaValidacion(HoraPeru.ahora());
         evidencia.setObservacionValidacion(observacion);
 
         EvidenciaInstalacion actualizada =

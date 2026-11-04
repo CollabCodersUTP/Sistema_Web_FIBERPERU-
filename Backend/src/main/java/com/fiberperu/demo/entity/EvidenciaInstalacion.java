@@ -1,5 +1,7 @@
 package com.fiberperu.demo.entity;
 
+import com.fiberperu.demo.util.HoraPeru;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -55,7 +57,7 @@ public class EvidenciaInstalacion {
     @PrePersist
     protected void antesDeCrear() {
         if (fechaRegistro == null) {
-            fechaRegistro = LocalDateTime.now();
+            fechaRegistro = HoraPeru.ahora();
         }
 
         if (estadoValidacion == null) {

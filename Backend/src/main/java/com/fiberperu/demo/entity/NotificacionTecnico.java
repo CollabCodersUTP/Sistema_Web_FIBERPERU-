@@ -1,5 +1,7 @@
 package com.fiberperu.demo.entity;
 
+import com.fiberperu.demo.util.HoraPeru;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -42,7 +44,7 @@ public class NotificacionTecnico {
     @PrePersist
     protected void antesDeCrear() {
         if (fechaCreacion == null) {
-            fechaCreacion = LocalDateTime.now();
+            fechaCreacion = HoraPeru.ahora();
         }
     }
 }

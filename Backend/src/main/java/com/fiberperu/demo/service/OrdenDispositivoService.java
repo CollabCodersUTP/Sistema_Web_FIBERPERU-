@@ -1,5 +1,7 @@
 package com.fiberperu.demo.service;
 
+import com.fiberperu.demo.util.HoraPeru;
+
 import com.fiberperu.demo.dto.asignacion.OrdenDispositivoRequest;
 import com.fiberperu.demo.dto.asignacion.OrdenDispositivoResponse;
 import com.fiberperu.demo.dto.asignacion.RetirarDispositivoRequest;
@@ -21,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -255,7 +256,7 @@ public class OrdenDispositivoService {
             );
         }
 
-        asignacion.setFechaRetiro(LocalDateTime.now());
+        asignacion.setFechaRetiro(HoraPeru.ahora());
         asignacion.setEstadoAsignacion("RETIRADO");
 
         String motivo = normalizarTextoOpcional(

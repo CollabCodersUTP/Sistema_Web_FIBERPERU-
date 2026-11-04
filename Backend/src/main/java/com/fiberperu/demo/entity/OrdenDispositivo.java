@@ -1,5 +1,7 @@
 package com.fiberperu.demo.entity;
 
+import com.fiberperu.demo.util.HoraPeru;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -51,7 +53,7 @@ public class OrdenDispositivo {
     @PrePersist
     protected void antesDeCrear() {
         if (fechaAsignacion == null) {
-            fechaAsignacion = LocalDateTime.now();
+            fechaAsignacion = HoraPeru.ahora();
         }
 
         if (estadoAsignacion == null) {

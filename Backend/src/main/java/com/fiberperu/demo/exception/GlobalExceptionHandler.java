@@ -1,5 +1,7 @@
 package com.fiberperu.demo.exception;
 
+import com.fiberperu.demo.util.HoraPeru;
+
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -14,7 +16,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -223,7 +224,7 @@ public class GlobalExceptionHandler {
     ) {
         ApiErrorResponse respuesta =
                 ApiErrorResponse.builder()
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(HoraPeru.ahora())
                         .status(estado.value())
                         .error(estado.getReasonPhrase())
                         .message(mensaje)

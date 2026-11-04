@@ -1,5 +1,7 @@
 package com.fiberperu.demo.service;
 
+import com.fiberperu.demo.util.HoraPeru;
+
 import com.fiberperu.demo.dto.orden.*;
 import com.fiberperu.demo.entity.*;
 import com.fiberperu.demo.exception.RecursoNoEncontradoException;
@@ -8,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -421,11 +422,11 @@ public class OrdenTrabajoService {
 
         if ("EN_PROCESO".equals(estadoNuevo)
                 && orden.getFechaInicio() == null) {
-            orden.setFechaInicio(LocalDateTime.now());
+            orden.setFechaInicio(HoraPeru.ahora());
         }
 
         if ("FINALIZADA".equals(estadoNuevo)) {
-            orden.setFechaFinalizacion(LocalDateTime.now());
+            orden.setFechaFinalizacion(HoraPeru.ahora());
         }
 
         if ("PROGRAMADA".equals(estadoNuevo)
