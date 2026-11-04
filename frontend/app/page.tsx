@@ -331,7 +331,7 @@ function OrdenesAvanzadas({ ordenes, solicitudes, dispositivos, canSchedule, can
   const detailIsClosed=detail?.estado==='FINALIZADA'||detail?.estado==='CANCELADA'
   const stateOptions=[
     ...(detail&&['ASIGNADA','PROGRAMADA','OBSERVADA'].includes(detail.estado||'')&&detail.idTecnico&&detail.fechaProgramada&&detail.horaProgramada?['EN_PROCESO']:[]),
-    ...(detail?.estado==='EN_PROCESO'?['OBSERVADA','FINALIZADA']:[]),
+    ...(detail?.estado==='EN_PROCESO'?['OBSERVADA',...(canSchedule?['FINALIZADA']:[])]:[]),
     'CANCELADA',
   ]
   return <><div className="page-title"><div><h1>Órdenes de trabajo</h1><p>Consulta, detalle operativo, filtros y reporte exportable.</p></div><div className="action-row"><button className="secondary" disabled={exportingExcel} onClick={()=>void exportExcel()}>{exportingExcel ? 'Generando Excel…' : 'Exportar Excel'}</button><details className="export-options"><summary className="secondary">Otros formatos</summary><div><button className="secondary" onClick={event=>{exportCsv();event.currentTarget.closest('details')?.removeAttribute('open')}}>Descargar CSV</button><small>Para importar datos en otros sistemas. Para usar en Excel, elige el formato .xlsx.</small></div></details>{canSchedule && <button className="primary" onClick={onSchedule}>Programar orden</button>}</div></div>{message&&<div className={`notice ${message === 'Estado de la orden actualizado.' || message === 'Dispositivo vinculado a la orden.' || message === 'Observación registrada.' ? 'success' : 'warning'}`}>{message}</div>}
