@@ -191,6 +191,46 @@ class OrdenTrabajoServiceTest {
     }
 
     @Test
+    void noCierraOrdenSinDispositivoInstalado() {
+        OrdenTrabajo orden = ordenEnProceso();
+        when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
+        when(ordenDispositivoRepository.findByOrdenIdOrden(7L))
+                .thenReturn(List.of());
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> service.cambiarEstado(7L, solicitudDeCierre(),
+                        "coordinador@fiberperu.test", true));
+
+        assertEquals("La orden debe tener al menos un dispositivo instalado",
+                error.getMessage());
+        assertEquals("EN_PROCESO", orden.getEstado());
+        verify(ordenRepository, never()).save(any());
+        verifyNoInteractions(evidenciaRepository, observacionRepository);
+    }
+
+    @Test
+    void noCierraOrdenConEvidenciaPendiente() {
+        OrdenTrabajo orden = ordenEnProceso();
+        when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
+        when(ordenDispositivoRepository.findByOrdenIdOrden(7L))
+                .thenReturn(List.of(OrdenDispositivo.builder()
+                        .estadoAsignacion("INSTALADO").build()));
+        when(evidenciaRepository.findByOrdenIdOrden(7L))
+                .thenReturn(List.of(EvidenciaInstalacion.builder()
+                        .estadoValidacion("PENDIENTE").build()));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> service.cambiarEstado(7L, solicitudDeCierre(),
+                        "coordinador@fiberperu.test", true));
+
+        assertEquals("Todas las evidencias deben estar aprobadas antes del cierre",
+                error.getMessage());
+        assertEquals("EN_PROCESO", orden.getEstado());
+        verify(ordenRepository, never()).save(any());
+        verifyNoInteractions(observacionRepository);
+    }
+
+    @Test
     void cierraOrdenCuandoTieneObservacionActivaDelTecnicoAsignado() {
         OrdenTrabajo orden = ordenEnProceso();
         prepararRequisitosExistentes(orden);
